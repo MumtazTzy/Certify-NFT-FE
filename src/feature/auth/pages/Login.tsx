@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Wallet, CheckCircle, Shield, AlertCircle } from 'lucide-react';
+import { connectWallet, signMessage } from '../lib/wallet';
+import { loginWithWallet } from '../services/authServices';
 
 export default function Login() {
   const [account, setAccount] = useState('');
@@ -10,98 +12,49 @@ export default function Login() {
   const [isRegistering, setIsRegistering] = useState(false);
   const navigate = useNavigate();
 
-  // Check if wallet is already connected on component mount
   useEffect(() => {
-    checkWalletConnection();
-  }, []);
-
-  const checkWalletConnection = async () => {
-    if (typeof window.ethereum !== 'undefined') {
-      try {
-        const accounts = await window.ethereum.request({ 
-          method: 'eth_accounts' 
-        });
+    if (window.ethereum) {
+      window.ethereum.request({ method: 'eth_accounts' }).then((accounts) => {
         if (accounts.length > 0) {
           setAccount(accounts[0]);
           setIsConnected(true);
         }
-      } catch (error) {
-        console.error('Error checking wallet connection:', error);
-      }
+      });
     }
-  };
+  }, []);
 
-  const connectWallet = async () => {
-    if (typeof window.ethereum === 'undefined') {
-      setError('MetaMask is not installed. Please install MetaMask to continue.');
-      return;
-    }
-
-    setIsLoading(true);
+  const handleConnect = async () => {
     setError('');
+    setIsLoading(true);
 
     try {
-      // Request account access
-      const accounts = await window.ethereum.request({
-        method: 'eth_requestAccounts'
-      });
+      const { address } = await connectWallet();
+      const message = `Login to Certify App\nTimestamp: ${Date.now()}`;
+      const signature = await signMessage(message);
+      const data = await loginWithWallet(address, message, signature);
 
-      if (accounts.length > 0) {
-        const userAccount = accounts[0];
-        setAccount(userAccount);
-        
-        // Sign a message to verify wallet ownership
-        const message = `Login to Certify App\nTimestamp: ${Date.now()}`;
-        const signature = await window.ethereum.request({
-          method: 'personal_sign',
-          params: [message, userAccount]
-        });
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('userAddress', address);
 
-        // Send to backend for verification and user creation/login
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            address: userAccount,
-            message: message,
-            signature: signature
-          })
-        });
+      setAccount(address);
+      setIsConnected(true);
 
-        const data = await response.json();
-
-        if (response.ok) {
-          // Store JWT token
-          localStorage.setItem('authToken', data.token);
-          localStorage.setItem('userAddress', userAccount);
-          
-          setIsConnected(true);
-          
-          if (data.isNewUser) {
-            setIsRegistering(true);
-            setTimeout(() => {
-              navigate('/profile-setup');
-            }, 2000);
-          } else {
-            setTimeout(() => {
-              navigate('/events');
-            }, 1500);
-          }
-        } else {
-          setError(data.error || 'Authentication failed');
-        }
+      if (data.isNewUser) {
+        setIsRegistering(true);
+        setTimeout(() => navigate('/profile-setup'), 2000);
+      } else {
+        setTimeout(() => navigate('/events'), 1500);
       }
-    } catch (error: unknown) {
-  const err = error as { code?: number; message?: string };
-  if (err.code === 4001) {
-    setError('Connection rejected by user');
-  } else {
-    setError(err.message || 'Failed to connect wallet. Please try again.');
-  }
-}
-
+    } catch (err: unknown) {
+      const error = err as Error & { code?: number };
+      if (error.code === 4001) {
+        setError('Connection rejected by user');
+      } else {
+        setError(error.message || 'Failed to connect wallet. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const disconnectWallet = () => {
@@ -111,10 +64,7 @@ export default function Login() {
     localStorage.removeItem('userAddress');
   };
 
-  const formatAddress = (address: string): string => {
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
-  };
-
+  const formatAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
@@ -151,7 +101,7 @@ export default function Login() {
               
               {!isConnected ? (
                 <button
-                  onClick={connectWallet}
+                  onClick={handleConnect}
                   disabled={isLoading}
                   className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 px-4 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 transform hover:scale-105 disabled:transform-none"
                 >
