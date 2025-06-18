@@ -1,4 +1,4 @@
-import { Certificate } from '../pages/MyCertificates';
+import { Certificate } from '../services/certificateService';
 import { Link } from 'react-router-dom';
 import { Award, Calendar, MapPin, Download, ExternalLink } from 'lucide-react';
 

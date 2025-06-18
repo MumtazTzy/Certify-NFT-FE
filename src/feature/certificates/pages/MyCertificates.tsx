@@ -1,4 +1,4 @@
-// src/pages/MyCertificatesPage.tsx
+// src/pages/user/MyCertificates.tsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import CertificateCard from '../components/CertificateCard';
@@ -6,18 +6,7 @@ import SearchBar from '../components/SearchBar';
 import WalletConnectPrompt from '../components/WalletConnectPrompt';
 import WalletInfoCard from '../components/WalletInfoCard';
 import { Award, Calendar } from 'lucide-react';
-
-export interface Certificate {
-  id: string;
-  tokenId: string;
-  eventTitle: string;
-  eventDate: string;
-  eventLocation: string;
-  organizer: string;
-  mintDate: string;
-  ipfsUrl: string;
-  status: 'valid' | 'revoked';
-}
+import { Certificate, fetchCertificates } from '../services/certificateService';
 
 export default function MyCertificatesPage() {
   const [isConnected, setIsConnected] = useState(true);
@@ -26,11 +15,10 @@ export default function MyCertificatesPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const fetchCertificates = async () => {
+    const loadCertificates = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
-        const res = await fetch('http://localhost:3000/certificates');
-        const data: Certificate[] = await res.json();
+        const data = await fetchCertificates();
         setCertificates(data);
       } catch (error) {
         console.error('Failed to fetch certificates:', error);
@@ -38,7 +26,8 @@ export default function MyCertificatesPage() {
         setLoading(false);
       }
     };
-    fetchCertificates();
+
+    loadCertificates();
   }, []);
 
   const filteredCertificates = certificates.filter((cert) =>
