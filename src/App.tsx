@@ -3,28 +3,28 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 
 // Import all pages
-import Home from './pages/Home';
-import RegisterRole from './pages/RegisterRole';
-import RegisterUser from './pages/RegisterUser';
-import RegisterVendor from './pages/RegisterVendor';
-import Login from './pages/Login';
-import Events from './pages/Events';
-import EventDetail from './pages/EventDetail';
-import WhitelistRegistration from './pages/WhitelistRegistration';
-import MintPage from './pages/MintPage';
-import MyCertificates from './pages/MyCertificates';
-import VerifyCertificate from './pages/VerifyCertificate';
-import VendorLogin from './pages/VendorLogin';
-import VendorDashboard from './pages/VendorDashboard';
-import CreateEvent from './pages/CreateEvent';
-import ManageEvent from './pages/ManageEvent';
-import ViewWhitelist from './pages/ViewWhitelist';
-import ViewMinted from './pages/ViewMinted';
-import VendorProfile from './pages/VendorProfile';
-import About from './pages/About';
-import FAQ from './pages/FAQ';
-import NotFound from './pages/NotFound';
-import ServerError from './pages/ServerError';
+import Home from './feature/Home';
+import RegisterRole from './feature/auth/pages/RegisterRole';
+import RegisterUser from './feature/auth/pages/RegisterUser';
+import RegisterVendor from './feature/auth/pages/RegisterVendor';
+import Login from './feature/auth/pages/Login';
+import Events from './feature/events/pages/Events';
+import EventDetail from './feature/events/pages/EventDetail';
+import WhitelistRegistration from './feature/events/pages/WhitelistRegistration';
+import MintPage from './feature/certificates/pages/MintPage';
+import MyCertificates from './feature/certificates/pages/MyCertificates';
+import VerifyCertificate from './feature/certificates/pages/VerifyCertificate';
+import VendorLogin from './feature/vendors/pages/VendorLogin';
+import VendorDashboard from './feature/vendors/pages/VendorDashboard';
+import CreateEvent from './feature/events/pages/CreateEvent';
+import ManageEvent from './feature/events/pages/ManageEvent';
+import ViewWhitelist from './feature/events/pages/ViewWhitelist';
+import ViewMinted from './feature/certificates/pages/ViewMinted';
+import VendorProfile from './feature/vendors/pages/VendorProfile';
+import About from './feature/About';
+import FAQ from './feature/FAQ';
+import NotFound from './feature/NotFound';
+import ServerError from './feature/ServerError';
 
 function App() {
   return (
