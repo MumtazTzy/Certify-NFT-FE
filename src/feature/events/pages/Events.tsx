@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Filter } from 'lucide-react';
 import { getEvents, Event } from '../services/EventServices';
 import EventCard from '../components/EventCard';

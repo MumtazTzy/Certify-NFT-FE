@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, MapPin, Users, Clock, ArrowRight } from 'lucide-react';
 import { Event } from '../services/EventServices';

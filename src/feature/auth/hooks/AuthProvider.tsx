@@ -1,7 +1,12 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import {
+  createContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from 'react';
 
 interface AuthContextType {
-  isAuthenticated: boolean;      // ✅ tambahkan ini
+  isAuthenticated: boolean;
   walletAddress: string | null;
   login: (token: string, walletAddress: string) => void;
   logout: () => void;
@@ -9,15 +14,13 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
-  // Load from localStorage on mount
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     const address = localStorage.getItem('userAddress');
-
     if (token && address) {
       setIsAuthenticated(true);
       setWalletAddress(address);
@@ -40,22 +43,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{
-        isAuthenticated,   // ✅ pastikan properti ini di-ekspos
-        walletAddress,
-        login,
-        logout,
-      }}
+      value={{ isAuthenticated, walletAddress, login, logout }}
     >
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
+// 👉 Export context for custom hook only
+export { AuthContext };

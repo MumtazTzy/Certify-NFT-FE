@@ -26,6 +26,7 @@ export async function getEvents(): Promise<Event[]> {
     attendees: item.attendees || 0,
     maxAttendees: item.maxAttendees || 100,
     description: item.description || '',
-    image: item.image || 'https://via.placeholder.com/400x200?text=No+Image',
-  }));
+      image: item.picture
+      ? `https://api.gpadaka.com/${item.picture}`
+      : 'https://via.placeholder.com/400x200?text=No+Image',}));
 }

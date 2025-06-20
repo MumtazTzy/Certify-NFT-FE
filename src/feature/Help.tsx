@@ -1,4 +1,3 @@
-import React from 'react';
 import { CheckCircle, KeyRound, Download, UserPlus, LogIn } from 'lucide-react';
 import { Link } from 'react-router-dom';
 

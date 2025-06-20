@@ -4,7 +4,7 @@ import { Wallet, CheckCircle, Shield, AlertCircle } from 'lucide-react';
 
 import { connectWallet, signMessage } from '../lib/wallet';
 import { loginWithWallet } from '../services/authServices';
-import { useAuth } from '../hooks/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 export default function Login() {
   const [error, setError] = useState('');
@@ -16,28 +16,20 @@ export default function Login() {
 
   interface WalletError extends Error {
     code?: number;
-    info?: {
-      error?: { code?: number };
-    };
-    data?: {
-      code?: number;
-    };
+    info?: { error?: { code?: number } };
+    data?: { code?: number };
   }
 
   const handleConnect = async () => {
     setError('');
     setIsLoading(true);
-
     try {
-      // Connect to wallet
       const { address } = await connectWallet();
       const message = `Login to Certify App\nTime: ${new Date().toLocaleString()}`;
       const signature = await signMessage(message);
 
-      // Call backend auth
       const data = await loginWithWallet(address, message, signature);
 
-      // Update global AuthContext
       login(data.token, address);
 
       if (data.isNewUser) {
@@ -51,7 +43,6 @@ export default function Login() {
       const error = err as WalletError;
       const code =
         error.code ?? error.info?.error?.code ?? error.data?.code ?? null;
-
       if (code === 4001) {
         setError('You rejected the wallet request.');
       } else if (error.message?.includes('MetaMask')) {
@@ -67,6 +58,7 @@ export default function Login() {
 
   const formatAddress = (address: string) =>
     `${address.slice(0, 6)}...${address.slice(-4)}`;
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
