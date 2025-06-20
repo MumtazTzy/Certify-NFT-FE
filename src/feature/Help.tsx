@@ -2,7 +2,7 @@ import React from 'react';
 import { CheckCircle, KeyRound, Download, UserPlus, LogIn } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-export default function Hel p() {
+export default function Help() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-purple-100 flex items-center justify-center py-16 px-4">
       <div className="max-w-2xl w-full bg-white/80 backdrop-blur-md border border-blue-100 shadow-xl rounded-2xl p-8 relative">

@@ -1,91 +1,72 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Wallet, CheckCircle, Shield, AlertCircle } from 'lucide-react';
+
 import { connectWallet, signMessage } from '../lib/wallet';
 import { loginWithWallet } from '../services/authServices';
+import { useAuth } from '../hooks/AuthContext';
 
 export default function Login() {
-  const [account, setAccount] = useState('');
-  const [isConnected, setIsConnected] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+
+  const { login, isAuthenticated, walletAddress, logout } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (window.ethereum) {
-      window.ethereum.request({ method: 'eth_accounts' }).then((accounts) => {
-        if (accounts.length > 0) {
-          setAccount(accounts[0]);
-          setIsConnected(true);
-        }
-      });
-    }
-  }, []);
   interface WalletError extends Error {
-  code?: number;
-  info?: {
-    error?: { code?: number };
-  };
-  data?: {
     code?: number;
-  };
-}
+    info?: {
+      error?: { code?: number };
+    };
+    data?: {
+      code?: number;
+    };
+  }
 
   const handleConnect = async () => {
     setError('');
     setIsLoading(true);
 
     try {
+      // Connect to wallet
       const { address } = await connectWallet();
       const message = `Login to Certify App\nTime: ${new Date().toLocaleString()}`;
       const signature = await signMessage(message);
+
+      // Call backend auth
       const data = await loginWithWallet(address, message, signature);
 
-      localStorage.setItem('authToken', data.token);
-      localStorage.setItem('userAddress', address);
-
-      setAccount(address);
-      setIsConnected(true);
-      
+      // Update global AuthContext
+      login(data.token, address);
 
       if (data.isNewUser) {
-      setIsRegistering(true);
-      navigate('/register');
+        setIsRegistering(true);
+        navigate('/register');
+        return;
       }
 
-      setTimeout(() => navigate('/events'), 2000);
+      navigate('/events');
     } catch (err: unknown) {
-    const error = err as WalletError;
+      const error = err as WalletError;
+      const code =
+        error.code ?? error.info?.error?.code ?? error.data?.code ?? null;
 
-    // ✅ Robust nested error code extraction
-    const code =
-      error.code ??
-      error.info?.error?.code ??
-      error.data?.code ?? null;
-
-    if (code === 4001) {
-      setError('You rejected the wallet request.');
-    } else if (error.message?.includes('MetaMask')) {
-      setError('MetaMask is not installed or not accessible.');
-    } else {
-      console.error('Unexpected wallet error:', error);
-      setError('Unexpected error occurred. Please try again.');
-    }
-      
+      if (code === 4001) {
+        setError('You rejected the wallet request.');
+      } else if (error.message?.includes('MetaMask')) {
+        setError('MetaMask is not installed or not accessible.');
+      } else {
+        console.error('Unexpected wallet error:', error);
+        setError('Unexpected error occurred. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const disconnectWallet = () => {
-    setAccount('');
-    setIsConnected(false);
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userAddress');
-  };
-
-  const formatAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
+  const formatAddress = (address: string) =>
+    `${address.slice(0, 6)}...${address.slice(-4)}`;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
@@ -119,17 +100,15 @@ export default function Login() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Connect Your Wallet
               </label>
-              
-              {!isConnected ? (
+
+              {!isAuthenticated ? (
                 <button
                   onClick={handleConnect}
                   disabled={isLoading}
                   className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 px-4 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 transform hover:scale-105 disabled:transform-none"
                 >
                   <Wallet className="h-5 w-5" />
-                  <span>
-                    {isLoading ? 'Connecting...' : 'Connect MetaMask'}
-                  </span>
+                  <span>{isLoading ? 'Connecting...' : 'Connect MetaMask'}</span>
                 </button>
               ) : (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -137,12 +116,16 @@ export default function Login() {
                     <div className="flex items-center space-x-3">
                       <CheckCircle className="h-5 w-5 text-green-600" />
                       <div>
-                        <p className="text-green-800 font-medium">Wallet Connected</p>
-                        <p className="text-green-600 text-sm">{formatAddress(account)}</p>
+                        <p className="text-green-800 font-medium">
+                          Wallet Connected
+                        </p>
+                        <p className="text-green-600 text-sm">
+                          {formatAddress(walletAddress!)}
+                        </p>
                       </div>
                     </div>
                     <button
-                      onClick={disconnectWallet}
+                      onClick={logout}
                       className="text-green-600 hover:text-green-700 text-sm underline"
                     >
                       Disconnect
@@ -150,17 +133,16 @@ export default function Login() {
                   </div>
                   <div className="bg-green-100 rounded-lg p-3">
                     <p className="text-green-800 text-sm font-medium">
-                      {isRegistering 
-                        ? '🎉 Welcome! Setting up your profile...' 
-                        : '🎉 Login successful! Redirecting to events...'
-                      }
+                      {isRegistering
+                        ? '🎉 Welcome! Setting up your profile...'
+                        : '🎉 Login successful!'}
                     </p>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Loading State */}
+            {/* Loading Spinner */}
             {isLoading && (
               <div className="text-center">
                 <div className="inline-flex items-center space-x-2 text-blue-600">
@@ -170,7 +152,7 @@ export default function Login() {
               </div>
             )}
 
-            {/* Information */}
+            {/* Info */}
             <div className="bg-blue-50 rounded-lg p-4">
               <h3 className="font-semibold text-blue-900 mb-2">
                 Why connect a wallet?
@@ -207,7 +189,10 @@ export default function Login() {
             <div className="text-center text-sm text-gray-600">
               <p>
                 Need help connecting your wallet?{' '}
-                <a href="/help" className="text-blue-600 hover:text-blue-700 underline">
+                <a
+                  href="/help"
+                  className="text-blue-600 hover:text-blue-700 underline"
+                >
                   View our guide
                 </a>
               </p>
@@ -217,11 +202,17 @@ export default function Login() {
           <div className="text-center mt-8 pt-6 border-t border-gray-200">
             <p className="text-gray-600 text-sm">
               By connecting your wallet, you agree to our{' '}
-              <a href="/terms" className="text-blue-600 hover:text-blue-700 underline">
+              <a
+                href="/terms"
+                className="text-blue-600 hover:text-blue-700 underline"
+              >
                 Terms of Service
               </a>{' '}
               and{' '}
-              <a href="/privacy" className="text-blue-600 hover:text-blue-700 underline">
+              <a
+                href="/privacy"
+                className="text-blue-600 hover:text-blue-700 underline"
+              >
                 Privacy Policy
               </a>
             </p>
