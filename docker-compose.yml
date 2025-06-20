@@ -1,3 +1,4 @@
+
 services:
   certify-nft-fe:
     container_name: certify-nft-fe
@@ -5,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "4000:4000"
+      - "3004:3004"
     restart: unless-stopped
     networks:
       - certify-nft-network
