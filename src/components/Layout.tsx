@@ -3,36 +3,10 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../feature/auth/hooks/useAuth';
 import ProfileDropdown from '../feature/Profile';
 
-// Optional: dark mode toggle hook
-// Buat hook ini di contexts/DarkModeContext.tsx atau di sini inline
-function useDarkMode() {
-  const [darkMode, setDarkMode] = useState(
-    () =>
-      localStorage.theme === 'dark' ||
-      (window.matchMedia &&
-        window.matchMedia('(prefers-color-scheme: dark)').matches)
-  );
-
-  React.useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.theme = 'dark';
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.theme = 'light';
-    }
-  }, [darkMode]);
-
-  const toggleDarkMode = () => setDarkMode(!darkMode);
-
-  return { darkMode, toggleDarkMode };
-}
-
 export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { darkMode, toggleDarkMode } = useDarkMode();
 
   const navLinks = [
     { to: '/', label: 'Home' },
@@ -42,8 +16,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      <header className="shadow border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+    <div className="min-h-screen flex flex-col">
+      <header className="bg-white shadow border-b">
         <div className="max-w-7xl mx-auto px-4 flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
@@ -59,8 +33,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 to={link.to}
                 className={`${
                   location.pathname === link.to
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400'
+                    ? 'text-blue-600'
+                    : 'text-gray-700 hover:text-blue-600'
                 } px-3 py-2 rounded-md`}
               >
                 {link.label}
@@ -68,21 +42,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
 
-          {/* Right side: Auth & Dark Mode */}
+          {/* Right side: Auth */}
           <div className="hidden md:flex items-center space-x-4">
-            <button
-              onClick={toggleDarkMode}
-              className="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2"
-              aria-label="Toggle Dark Mode"
-            >
-              {darkMode ? '☀️' : '🌙'}
-            </button>
-
             {isAuthenticated ? (
               <ProfileDropdown />
             ) : (
               <>
-                <Link to="/login" className="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2">
+                <Link to="/login" className="text-gray-700 hover:text-blue-600 px-3 py-2">
                   Login
                 </Link>
                 <Link to="/register" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
@@ -96,7 +62,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="md:hidden p-2"
-            aria-label="Toggle Menu"
           >
             ☰
           </button>
@@ -104,23 +69,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Mobile dropdown */}
         {isMobileMenuOpen && (
-          <div className="md:hidden bg-white dark:bg-gray-900 px-4 pb-4 space-y-2 border-t border-gray-200 dark:border-gray-700">
+          <div className="md:hidden bg-white px-4 pb-4 space-y-2">
             {navLinks.map(link => (
               <Link
                 key={link.to}
                 to={link.to}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="block py-2 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400"
+                className="block py-2 text-gray-700 hover:text-blue-600"
               >
                 {link.label}
               </Link>
             ))}
-            <button
-              onClick={toggleDarkMode}
-              className="block py-2 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400"
-            >
-              {darkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
-            </button>
             {isAuthenticated ? (
               <ProfileDropdown />
             ) : (
@@ -135,7 +94,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       <main className="flex-1">{children}</main>
 
-      <footer className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 py-8 text-center text-gray-500 dark:text-gray-400">
+      <footer className="bg-white border-t py-8 text-center text-gray-500">
         © 2024 Certify. All rights reserved.
       </footer>
     </div>
