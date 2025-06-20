@@ -59,28 +59,30 @@ jobs:
           COMMIT_URL: https://github.com/${{ github.repository }}/commit/${{ github.sha }}
         run: |
           if [ "${{ needs.deploy.result }}" = "success" ]; then
-            STATUS="✅ FE Deployment Succeeded"
+            STATUS="✅ Deployment Succeeded"
             COLOR=3066993
           else
-            STATUS="❌ FE Deployment Failed"
+            STATUS="❌ Deployment Failed"
             COLOR=15158332
           fi
 
           curl -H "Content-Type: application/json" \
           -X POST \
           -d '{
-            "username": "Certify-NFT FE",
+            "username": "Certify-NFT",
             "avatar_url": "https://github.com/'"${{ github.actor }}"'.png",
             "embeds": [{
-              "title": "'$STATUS'",
-              "description": "Frontend deployment to VPS **'$STATUS'**",
-              "color": '$COLOR',
+              "title": "'"$STATUS"'",
+              "description": "Frontend deployment to VPS **'"$STATUS"'**",
+              "color": '"$COLOR"',
               "fields": [
-                { "name": "Commit", "value": "'${{ github.event.head_commit.message }}'" },
-                { "name": "Author", "value": "'${{ github.actor }}'" },
-                { "name": "View Commit", "value": "'$COMMIT_URL'" }
+                { "name": "Commit", "value": "'"${{ github.event.head_commit.message }}"'" },
+                { "name": "Author", "value": "'"${{ github.actor }}"'" },
+                { "name": "View Commit", "value": "'"$COMMIT_URL"'" }
               ],
-              "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
+              "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"
             }]
           }' \
           $DISCORD_WEBHOOK_URL
+
+        # test CI/CD 1
