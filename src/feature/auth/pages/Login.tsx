@@ -22,6 +22,15 @@ export default function Login() {
       });
     }
   }, []);
+  interface WalletError extends Error {
+  code?: number;
+  info?: {
+    error?: { code?: number };
+  };
+  data?: {
+    code?: number;
+  };
+}
 
   const handleConnect = async () => {
     setError('');
@@ -41,17 +50,26 @@ export default function Login() {
 
       if (data.isNewUser) {
         setIsRegistering(true);
-        setTimeout(() => navigate('/profile-setup'), 2000);
-      } else {
         setTimeout(() => navigate('/events'), 1500);
-      }
+      } 
     } catch (err: unknown) {
-      const error = err as Error & { code?: number };
-      if (error.code === 4001) {
-        setError('Connection rejected by user');
-      } else {
-        setError(error.message || 'Failed to connect wallet. Please try again.');
-      }
+    const error = err as WalletError;
+
+    // ✅ Robust nested error code extraction
+    const code =
+      error.code ??
+      error.info?.error?.code ??
+      error.data?.code ?? null;
+
+    if (code === 4001) {
+      setError('You rejected the wallet request.');
+    } else if (error.message?.includes('MetaMask')) {
+      setError('MetaMask is not installed or not accessible.');
+    } else {
+      console.error('Unexpected wallet error:', error);
+      setError('Unexpected error occurred. Please try again.');
+    }
+      
     } finally {
       setIsLoading(false);
     }
