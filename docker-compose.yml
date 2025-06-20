@@ -1,6 +1,6 @@
 services:
-  certify-nft-be:
-    container_name: certify-nft-be
+  certify-nft-fe:
+    container_name: certify-nft-fe
     build:
       context: .
       dockerfile: Dockerfile
