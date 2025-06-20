@@ -26,6 +26,9 @@ import About from './feature/About';
 import FAQ from './feature/FAQ';
 import NotFound from './feature/NotFound';
 import ServerError from './feature/ServerError';
+import Help from './feature/Help';
+import TermsOfService from './feature/TermsOfService';
+import PrivacyPolicy from './feature/PrivacyPolicy';
 
 function App() {
   return (
@@ -47,6 +50,9 @@ function App() {
           <Route path="/verify/:tokenId" element={<VerifyCertificate />} />
           <Route path="/about" element={<About />} />
           <Route path="/faq" element={<FAQ />} />
+          <Route path="/help" element={<Help />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
 
           {/* Vendor Routes */}
           <Route path="/vendor/login" element={<VendorLogin />} />

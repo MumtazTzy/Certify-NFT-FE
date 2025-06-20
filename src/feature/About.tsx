@@ -51,7 +51,7 @@ export default function About() {
             <div className="flex justify-center mb-8">
               <div className="relative">
                 <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full opacity-20 blur-lg"></div>
-                <Shield className="relative h-16 w-16 text-blue-600" />
+                <img src="/assets/logo.webp" alt="Certify-NFT_logo" className="h-24" />
               </div>
             </div>
             
