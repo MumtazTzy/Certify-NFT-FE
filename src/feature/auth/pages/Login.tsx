@@ -47,11 +47,14 @@ export default function Login() {
 
       setAccount(address);
       setIsConnected(true);
+      
 
       if (data.isNewUser) {
-        setIsRegistering(true);
-        setTimeout(() => navigate('/events'), 1500);
-      } 
+      setIsRegistering(true);
+      navigate('/register');
+      }
+
+      setTimeout(() => navigate('/events'), 2000);
     } catch (err: unknown) {
     const error = err as WalletError;
 
