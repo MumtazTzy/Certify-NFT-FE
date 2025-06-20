@@ -24,7 +24,7 @@ export async function getEvents(): Promise<Event[]> {
     location: item.location || 'Unknown',
     status: item.status as 'upcoming' | 'minting' | 'closed' || 'upcoming',
     attendees: item.attendees || 0,
-    maxAttendees: item.maxAttendees || 100,
+    maxAttendees: item.maxattendees || 100,
     description: item.description || '',
       image: item.picture
       ? `https://api.gpadaka.com/${item.picture}`
