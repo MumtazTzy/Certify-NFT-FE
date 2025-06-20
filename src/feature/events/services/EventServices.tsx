@@ -20,7 +20,7 @@ export async function getEvents(): Promise<Event[]> {
   return data.map((item: any) => ({
     id: String(item.id),
     title: item.title || 'Untitled',
-    date: item.date || new Date().toISOString(),
+    date: item.start_date || new Date().toISOString(),
     location: item.location || 'Unknown',
     status: item.status as 'upcoming' | 'minting' | 'closed' || 'upcoming',
     attendees: item.attendees || 0,
