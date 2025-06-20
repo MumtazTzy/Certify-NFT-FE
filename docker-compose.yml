@@ -1,12 +1,14 @@
 services:
-  frontend:
-    image: certify-nft:latest
-    container_name: certify-nft-fe
+  certify-nft-be:
+    container_name: certify-nft-be
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "3004:3004"
+      - "4000:4000"
+    restart: unless-stopped
     networks:
       - certify-nft-network
-    restart: unless-stopped
 
 networks:
   certify-nft-network:
