@@ -10,3 +10,4 @@ git reset --hard dev
 git push -f origin prod
 
 echo "Production branch has been updated successfully!" 
+
