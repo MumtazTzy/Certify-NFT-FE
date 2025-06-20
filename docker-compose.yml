@@ -1,0 +1,13 @@
+services:
+  frontend:
+    image: certify-nft:latest
+    container_name: certify-nft-fe
+    ports:
+      - "3004:3004"
+    networks:
+      - certify-nft-network
+    restart: unless-stopped
+
+networks:
+  certify-nft-network:
+    external: true
