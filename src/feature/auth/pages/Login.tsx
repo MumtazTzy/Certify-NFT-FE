@@ -29,7 +29,7 @@ export default function Login() {
 
     try {
       const { address } = await connectWallet();
-      const message = `Login to Certify App\nTimestamp: ${Date.now()}`;
+      const message = `Login to Certify App\nTime: ${new Date().toLocaleString()}`;
       const signature = await signMessage(message);
       const data = await loginWithWallet(address, message, signature);
 
