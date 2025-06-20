@@ -19,6 +19,7 @@ import VendorDashboard from './feature/vendors/pages/VendorDashboard';
 import CreateEvent from './feature/events/pages/CreateEvent';
 import ManageEvent from './feature/events/pages/ManageEvent';
 import ViewWhitelist from './feature/events/pages/ViewWhitelist';
+import MyEvent from './feature/events/pages/myevent';
 import ViewMinted from './feature/certificates/pages/ViewMinted';
 import VendorProfile from './feature/vendors/pages/VendorProfile';
 import About from './feature/About';
@@ -38,6 +39,7 @@ function App() {
           <Route path="/register/vendor" element={<RegisterVendor />} />
           <Route path="/login" element={<Login />} />
           <Route path="/events" element={<Events />} />
+          <Route path="/myevents" element={<MyEvent />} />
           <Route path="/events/:id" element={<EventDetail />} />
           <Route path="/whitelist/:eventId" element={<WhitelistRegistration />} />
           <Route path="/mint/:eventId" element={<MintPage />} />
