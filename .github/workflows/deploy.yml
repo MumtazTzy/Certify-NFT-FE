@@ -84,3 +84,5 @@ jobs:
             }]
           }' \
           $DISCORD_WEBHOOK_URL
+
+        # test CI/CD 1
