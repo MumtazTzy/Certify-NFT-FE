@@ -26,7 +26,7 @@ export default function Login() {
     try {
       const { address } = await connectWallet();
       const message = `Login to Certify App\nTime: ${new Date().toLocaleString()}`;
-      const signature = await signMessage(message);
+      await signMessage(message);
 
       const data = await loginWithWallet(address);
 
@@ -35,10 +35,11 @@ export default function Login() {
       if (data.isNewUser) {
         setIsRegistering(true);
         navigate('/register');
-        return;
+      } else if (data.role === 'vendor') {
+        navigate('/vendor/dashboard');
+      } else {
+        navigate('/events');
       }
-
-      navigate('/events');
     } catch (err: unknown) {
       const error = err as WalletError;
       const code =
@@ -55,6 +56,7 @@ export default function Login() {
       setIsLoading(false);
     }
   };
+
 
   const formatAddress = (address: string) =>
     `${address.slice(0, 6)}...${address.slice(-4)}`;
