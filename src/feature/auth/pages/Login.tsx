@@ -28,7 +28,7 @@ export default function Login() {
       const message = `Login to Certify App\nTime: ${new Date().toLocaleString()}`;
       const signature = await signMessage(message);
 
-      const data = await loginWithWallet(address, message, signature);
+      const data = await loginWithWallet(address);
 
       login(data.token, address);
 

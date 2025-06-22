@@ -1,10 +1,10 @@
-export const loginWithWallet = async (address: string, message: string, signature: string) => {
-  const response = await fetch('/api/auth/login', {
+export const loginWithWallet = async (wallet_address: string,) => {
+  const response = await fetch('https://api.gpadaka.com/api3/api/auth/login', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ address, message, signature })
+    body: JSON.stringify({ wallet_address })
   });
 
   const data = await response.json();

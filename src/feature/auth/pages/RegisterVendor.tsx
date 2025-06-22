@@ -1,35 +1,101 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Wallet, Building, Mail, Phone, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  Wallet,
+  Building,
+  Mail,
+  Phone,
+  ArrowLeft,
+  CheckCircle,
+  AlertCircle,
+} from 'lucide-react';
+
+import { connectWallet, signMessage } from '../lib/wallet';
+import { registerVendor } from '../services/vendorServices';
 
 export default function RegisterVendor() {
   const [formData, setFormData] = useState({
     vendorName: '',
     email: '',
-    contactInfo: ''
+    contactInfo: '',
   });
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{ vendorName?: string; email?: string; general?: string }>({});
 
-  const handleWalletConnect = () => {
-    // Placeholder for wallet connection
-    setIsConnected(true);
+  const navigate = useNavigate();
+
+  const handleWalletConnect = async () => {
+    setErrors({});
+    setIsLoading(true);
+    try {
+      const { address } = await connectWallet();
+      const message = `Register as Vendor\nTime: ${new Date().toLocaleString()}`;
+      await signMessage(message);
+      setWalletAddress(address);
+      setIsConnected(true);
+    } catch (err: any) {
+      if (err.code === 4001) {
+        setErrors({ general: 'You rejected the wallet request.' });
+      } else {
+        setErrors({ general: 'Failed to connect wallet.' });
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     }));
+    setErrors((prev) => ({ ...prev, [e.target.name]: '' }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isConnected || !acceptTerms || !formData.vendorName || !formData.email) return;
-    
-    // Handle vendor registration logic
-    console.log('Vendor registration:', { ...formData, acceptTerms });
+  const validateForm = () => {
+    const newErrors: typeof errors = {};
+    if (!formData.vendorName.trim()) newErrors.vendorName = 'Organization name is required';
+    if (!formData.email.trim()) newErrors.email = 'Email is required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Invalid email';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isConnected) {
+      setErrors({ general: 'Please connect your wallet first.' });
+      return;
+    }
+    if (!acceptTerms) {
+      setErrors({ general: 'Please accept the Terms and Privacy Policy.' });
+      return;
+    }
+    if (!validateForm()) return;
+
+    setIsLoading(true);
+    try {
+      const payload = {
+        vendor_name: formData.vendorName,
+        email: formData.email,
+        contact_info: formData.contactInfo,
+        wallet_address: walletAddress!,
+        acceptTerms,
+      };
+      const result = await registerVendor(payload);
+      console.log('Vendor registration success:', result);
+      navigate('/vendor/dashboard'); // Ganti sesuai halaman vendor kamu
+    } catch (err: any) {
+      setErrors({ general: err.message || 'Registration failed' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex items-center justify-center p-4">
@@ -57,6 +123,16 @@ export default function RegisterVendor() {
             </p>
           </div>
 
+          {/* Error Message */}
+          {errors.general && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <div className="flex items-center space-x-3">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+                <p className="text-red-800 text-sm">{errors.general}</p>
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Wallet Connection */}
             <div>
@@ -67,17 +143,18 @@ export default function RegisterVendor() {
                 <button
                   type="button"
                   onClick={handleWalletConnect}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2"
+                  disabled={isLoading}
+                  className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2"
                 >
                   <Wallet className="h-5 w-5" />
-                  <span>Connect Wallet</span>
+                  <span>{isLoading ? 'Connecting...' : 'Connect Wallet'}</span>
                 </button>
               ) : (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center space-x-3">
                   <CheckCircle className="h-5 w-5 text-green-600" />
                   <div>
                     <p className="text-green-800 font-medium">Wallet Connected</p>
-                    <p className="text-green-600 text-sm">0x1234...5678</p>
+                    <p className="text-green-600 text-sm">{formatAddress(walletAddress!)}</p>
                   </div>
                 </div>
               )}
@@ -97,10 +174,15 @@ export default function RegisterVendor() {
                   value={formData.vendorName}
                   onChange={handleInputChange}
                   required
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                  className={`w-full pl-10 pr-4 py-3 border ${
+                    errors.vendorName ? 'border-red-500' : 'border-gray-300'
+                  } rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors`}
                   placeholder="Your Organization Name"
                 />
               </div>
+              {errors.vendorName && (
+                <p className="mt-1 text-sm text-red-500">{errors.vendorName}</p>
+              )}
             </div>
 
             {/* Email */}
@@ -117,10 +199,15 @@ export default function RegisterVendor() {
                   value={formData.email}
                   onChange={handleInputChange}
                   required
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                  className={`w-full pl-10 pr-4 py-3 border ${
+                    errors.email ? 'border-red-500' : 'border-gray-300'
+                  } rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors`}
                   placeholder="your@organization.com"
                 />
               </div>
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-500">{errors.email}</p>
+              )}
             </div>
 
             {/* Contact Info */}
@@ -168,10 +255,10 @@ export default function RegisterVendor() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={!isConnected || !acceptTerms || !formData.vendorName || !formData.email}
+              disabled={isLoading}
               className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-semibold transition-all transform hover:scale-105 disabled:transform-none"
             >
-              Complete Registration
+              {isLoading ? 'Registering...' : 'Complete Registration'}
             </button>
           </form>
 

@@ -1,131 +1,137 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Wallet, Mail, ArrowLeft, CheckCircle, User } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Wallet, CheckCircle, User, Mail, Shield, AlertCircle } from 'lucide-react';
+
+import { connectWallet, signMessage } from '../lib/wallet';
+import { registerUser } from '../services/userServices';
 
 export default function RegisterUser() {
   const [formData, setFormData] = useState({
     fullName: '',
-    email: ''
+    email: '',
   });
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [errors, setErrors] = useState({
-    fullName: '',
-    email: ''
-  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{ fullName?: string; email?: string; general?: string }>({});
 
-  const isValidEmail = (email: string) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
+  const navigate = useNavigate();
 
-  const handleWalletConnect = () => {
-    // Placeholder for wallet connection
-    setIsConnected(true);
+  const handleWalletConnect = async () => {
+    setErrors({});
+    setIsLoading(true);
+    try {
+      const { address } = await connectWallet();
+      const message = `Register at Certify\nTime: ${new Date().toLocaleString()}`;
+      await signMessage(message);
+      setWalletAddress(address);
+      setIsConnected(true);
+    } catch (err: any) {
+      if (err.code === 4001) {
+        setErrors({ general: 'You rejected the wallet request.' });
+      } else {
+        setErrors({ general: 'Failed to connect wallet.' });
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    // Clear error when user starts typing
-    setErrors(prev => ({
-      ...prev,
-      [name]: ''
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
   const validateForm = () => {
-    const newErrors = {
-      fullName: '',
-      email: ''
-    };
-    let isValid = true;
-
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = 'Full name is required';
-      isValid = false;
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-      isValid = false;
-    } else if (!isValidEmail(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
-      isValid = false;
-    }
+    const newErrors: typeof errors = {};
+    if (!formData.fullName.trim()) newErrors.fullName = 'Full name is required';
+    if (!formData.email.trim()) newErrors.email = 'Email is required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Invalid email';
 
     setErrors(newErrors);
-    return isValid;
+    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isConnected || !acceptTerms) return;
-    
-    if (validateForm()) {
-      // Handle registration logic
-      console.log('User registration:', { ...formData, acceptTerms });
+    if (!isConnected) {
+      setErrors({ general: 'Please connect your wallet first.' });
+      return;
+    }
+    if (!acceptTerms) {
+      setErrors({ general: 'Please accept the Terms and Privacy Policy.' });
+      return;
+    }
+    if (!validateForm()) return;
+
+    setIsLoading(true);
+    try {
+      const payload = {
+        name: formData.fullName,
+        email: formData.email,
+        wallet_address: walletAddress!,
+        acceptTerms,
+      };
+      const result = await registerUser(payload);
+      console.log('Registration success:', result);
+      navigate('/events'); // or wherever you want
+    } catch (err: any) {
+      setErrors({ general: err.message || 'Registration failed' });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const isFormValid = () => {
-    return (
-      isConnected &&
-      acceptTerms &&
-      formData.fullName.trim() !== '' &&
-      isValidEmail(formData.email)
-    );
-  };
+  const formatAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
       <div className="max-w-md mx-auto">
-        <div className="mb-8">
-          <Link
-            to="/register"
-            className="inline-flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-            <span>Back to role selection</span>
-          </Link>
-        </div>
-
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
             <div className="bg-blue-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Wallet className="h-8 w-8 text-blue-600" />
+              <Shield className="h-8 w-8 text-blue-600" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Register as User
-            </h1>
-            <p className="text-gray-600">
-              Connect your wallet to get started with Certify
-            </p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Register Account</h1>
+            <p className="text-gray-600">Connect your wallet & fill in your details</p>
           </div>
+
+          {/* Error Message */}
+          {errors.general && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <div className="flex items-center space-x-3">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+                <p className="text-red-800 text-sm">{errors.general}</p>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Wallet Connection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Wallet Connection
+                Connect Your Wallet
               </label>
               {!isConnected ? (
                 <button
                   type="button"
                   onClick={handleWalletConnect}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2"
+                  disabled={isLoading}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 px-4 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 transform hover:scale-105 disabled:transform-none"
                 >
                   <Wallet className="h-5 w-5" />
-                  <span>Connect Wallet</span>
+                  <span>{isLoading ? 'Connecting...' : 'Connect MetaMask'}</span>
                 </button>
               ) : (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center space-x-3">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <div>
-                    <p className="text-green-800 font-medium">Wallet Connected</p>
-                    <p className="text-green-600 text-sm">0x1234...5678</p>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <div>
+                      <p className="text-green-800 font-medium">Wallet Connected</p>
+                      <p className="text-green-600 text-sm">{formatAddress(walletAddress!)}</p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -144,11 +150,10 @@ export default function RegisterUser() {
                   name="fullName"
                   value={formData.fullName}
                   onChange={handleInputChange}
-                  required
                   className={`w-full pl-10 pr-4 py-3 border ${
                     errors.fullName ? 'border-red-500' : 'border-gray-300'
                   } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
-                  placeholder="Enter your full name as it will appear on certificates"
+                  placeholder="Your full name"
                 />
               </div>
               {errors.fullName && (
@@ -169,7 +174,6 @@ export default function RegisterUser() {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  required
                   className={`w-full pl-10 pr-4 py-3 border ${
                     errors.email ? 'border-red-500' : 'border-gray-300'
                   } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
@@ -179,12 +183,9 @@ export default function RegisterUser() {
               {errors.email && (
                 <p className="mt-1 text-sm text-red-500">{errors.email}</p>
               )}
-              <p className="text-sm text-gray-500 mt-1">
-                We'll send you event updates and certificate notifications
-              </p>
             </div>
 
-            {/* Terms Checkbox */}
+            {/* Terms */}
             <div className="flex items-start space-x-3">
               <input
                 type="checkbox"
@@ -195,30 +196,30 @@ export default function RegisterUser() {
               />
               <label htmlFor="terms" className="text-sm text-gray-700">
                 I accept the{' '}
-                <a href="#" className="text-blue-600 hover:text-blue-700 underline">
+                <a href="/terms" className="text-blue-600 hover:text-blue-700 underline">
                   Terms of Service
                 </a>{' '}
                 and{' '}
-                <a href="#" className="text-blue-600 hover:text-blue-700 underline">
+                <a href="/privacy" className="text-blue-600 hover:text-blue-700 underline">
                   Privacy Policy
-                </a>
+                </a>.
               </label>
             </div>
 
-            {/* Submit Button */}
+            {/* Submit */}
             <button
               type="submit"
-              disabled={!isFormValid()}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-semibold transition-all transform hover:scale-105 disabled:transform-none"
+              disabled={isLoading}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3 px-4 rounded-lg font-semibold transition-all transform hover:scale-105 disabled:transform-none"
             >
-              Complete Registration
+              {isLoading ? 'Registering...' : 'Complete Registration'}
             </button>
           </form>
 
           <div className="text-center mt-6">
-            <p className="text-gray-600">
+            <p className="text-gray-600 text-sm">
               Already have an account?{' '}
-              <Link to="/login" className="text-blue-600 hover:text-blue-700 font-semibold">
+              <Link to="/login" className="text-blue-600 hover:text-blue-700 underline">
                 Login here
               </Link>
             </p>
