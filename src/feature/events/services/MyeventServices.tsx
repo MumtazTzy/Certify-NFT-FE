@@ -1,25 +1,27 @@
-// src/api/events.ts
-
 export interface Event {
-  id: string;
+  id: number;
   title: string;
-  date: string;
-  location: string;
-  status: 'upcoming' | 'minting' | 'closed';
-  attendees: number;
-  maxAttendees: number;
   description: string;
-  image: string;
+  start_date: string;
+  end_date: string;
+  location: string;
+  status: 'upcoming' | 'ongoing' | 'completed';
+  attendees: number;
+  maxattendees: number;
+  picture: string;
 }
 
-// Fetch events by user ID
-export async function fetchUserEvents(userId: number): Promise<Event[]> {
-  const res = await fetch(`https://api.gpadaka.com/api3/api/users/${userId}/events`);
-  
+/**
+ * Fetch events by wallet address (NOT numeric user ID)
+ */
+export async function fetchUserEvents(walletAddress: string): Promise<Event[]> {
+  const res = await fetch(`https://api.gpadaka.com/api3/api/users/${walletAddress}/events`);
+
   if (!res.ok) {
-    const errorData = await res.json();
+    const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.message || `Failed to fetch events`);
   }
 
-  return res.json();
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
 }

@@ -1,124 +1,122 @@
-import React, { useEffect, useState } from 'react';
+// src/pages/user/MyEventsPage.tsx
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Calendar, MapPin, Users, ArrowRight } from 'lucide-react';
-import { fetchUserEvents, Event } from '../services/MyeventServices';
+import { Calendar, MapPin, Users, CalendarDays } from 'lucide-react';
+import WalletConnectPrompt from '../../certificates/components/WalletConnectPrompt';
+import { useAuth } from '../../auth/hooks/useAuth';
+import { Event, fetchUserEvents } from '../services/MyeventServices';
 
-// Group helper
-function groupEvents(events: Event[]) {
-  return {
-    upcoming: events.filter(e => e.status === 'upcoming'),
-    minting: events.filter(e => e.status === 'minting'),
-    past: events.filter(e => e.status === 'closed'),
-  };
-}
+// Card component for event
+const EventCard = ({ event }: { event: Event }) => (
+  <div className="bg-white p-4 rounded-lg shadow">
+    <h3 className="text-lg font-semibold mb-1">{event.title}</h3>
+    <p className="text-sm text-gray-500 mb-3">{event.description}</p>
+    <div className="flex flex-col gap-1 text-sm text-gray-600 mb-3">
+      <span className="flex items-center gap-1">
+        <Calendar className="w-4 h-4" />
+        {new Date(event.start_date).toLocaleDateString()}
+      </span>
+      <span className="flex items-center gap-1">
+        <MapPin className="w-4 h-4" />
+        {event.location}
+      </span>
+      <span className="flex items-center gap-1">
+        <Users className="w-4 h-4" />
+        {event.attendees}/{event.maxattendees} attendees
+      </span>
+    </div>
+    <Link
+      to={`/events/${event.id}`}
+      className="text-blue-600 hover:underline block"
+    >
+      View Details
+    </Link>
+  </div>
+);
 
-// Next event helper
-function getNextEvent(events: Event[]) {
-  const upcoming = events.filter(e => e.status === 'upcoming');
-  if (upcoming.length === 0) return null;
-  return upcoming.reduce((next, curr) => {
-    const currDate = new Date(curr.date);
-    const nextDate = new Date(next.date);
-    return currDate < nextDate ? curr : next;
-  }, upcoming[0]);
-}
-
-export default function MyEventPage() {
-  const [myEvents, setMyEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default function MyEventsPage() {
+  const { isAuthenticated, walletAddress, login } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    async function loadEvents() {
+    if (!walletAddress) return;
+
+    const load = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
-        setError(null);
-        const data = await fetchUserEvents(2); // hardcoded user ID = 2
-        setMyEvents(data);
-      } catch (err: any) {
-        console.error(err);
-        setError(err.message || 'Failed to load events');
+        const data = await fetchUserEvents(walletAddress);
+        setEvents(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error('Failed to fetch events:', err);
+        setEvents([]); // fallback
       } finally {
         setLoading(false);
       }
-    }
+    };
 
-    loadEvents();
-  }, []);
+    load();
+  }, [walletAddress]);
 
-  const filtered = myEvents.filter(e =>
+  const filtered = events.filter((e) =>
     e.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     e.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const { upcoming, minting, past } = groupEvents(filtered);
-  const nextEvent = getNextEvent(filtered);
-
-  const renderEventCard = (event: Event) => (
-    <div key={event.id} className="bg-white shadow p-4 rounded-lg mb-4">
-      <h3 className="text-xl font-bold">{event.title}</h3>
-      <p>{event.description}</p>
-      <div className="flex gap-4 text-sm text-gray-600 mt-2">
-        <span><Calendar className="inline w-4 h-4" /> {event.date}</span>
-        <span><MapPin className="inline w-4 h-4" /> {event.location}</span>
-        <span><Users className="inline w-4 h-4" /> {event.attendees}/{event.maxAttendees}</span>
-      </div>
-      <Link to={`/events/${event.id}`} className="text-blue-600 mt-2 inline-flex items-center">
-        View Details <ArrowRight className="ml-1 w-4 h-4" />
-      </Link>
-    </div>
-  );
+  if (!isAuthenticated) {
+    return (
+      <WalletConnectPrompt
+        onConnect={() => {
+          const dummyToken = 'dummyToken';
+          const dummyAddress = '0x12d7A5E92D17dcb068e512660B24A9A3072a755e';
+          login(dummyToken, dummyAddress);
+        }}
+      />
+    );
+  }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">My Events</h1>
+    <div className="min-h-screen bg-gray-50 py-12 px-4">
+      <h1 className="text-4xl font-bold text-gray-900 mb-6">My Events</h1>
 
-      {/* Search */}
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Search my events..."
-          className="w-full pl-10 pr-4 py-2 border rounded-lg"
-        />
-      </div>
+      <input
+        type="text"
+        placeholder="Search events..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="w-full mb-6 p-3 border border-gray-300 rounded-lg"
+      />
 
-      {/* Status */}
-      {loading && <p>Loading events...</p>}
-      {error && <p className="text-red-500">{error}</p>}
-
-      {!loading && !error && (
-        <>
-          {filtered.length === 0 ? (
-            <p>No events found.</p>
-          ) : (
-            <>
-              {upcoming.length > 0 && (
-                <>
-                  <h2 className="text-lg font-semibold mb-2">Upcoming Events</h2>
-                  {upcoming.map(renderEventCard)}
-                </>
-              )}
-
-              {minting.length > 0 && (
-                <>
-                  <h2 className="text-lg font-semibold mb-2 mt-4">Minting Open</h2>
-                  {minting.map(renderEventCard)}
-                </>
-              )}
-
-              {past.length > 0 && (
-                <>
-                  <h2 className="text-lg font-semibold mb-2 mt-4">Past Events</h2>
-                  {past.map(renderEventCard)}
-                </>
-              )}
-            </>
-          )}
-        </>
+      {loading ? (
+        <p>Loading events...</p>
+      ) : filtered.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filtered.map((event) => (
+            <EventCard key={event.id} event={event} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CalendarDays className="h-8 w-8 text-gray-400" />
+          </div>
+          <h3 className="text-xl font-semibold mb-2">
+            {searchTerm ? 'No events found' : 'No events yet'}
+          </h3>
+          <p className="text-gray-600 mb-6">
+            {searchTerm
+              ? 'Try adjusting your search'
+              : 'Explore and join your first event!'}
+          </p>
+          <Link
+            to="/events"
+            className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold"
+          >
+            <Calendar className="h-5 w-5" />
+            <span>Browse Events</span>
+          </Link>
+        </div>
       )}
     </div>
   );
