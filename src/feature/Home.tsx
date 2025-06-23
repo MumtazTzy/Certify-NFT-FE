@@ -35,7 +35,13 @@ export default function Home() {
             <div className="flex justify-center mb-8">
               <div className="relative">
                 <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full opacity-20 blur-lg"></div>
-                <img src="/assets/logo.webp" alt="Certify-NFT_logo" className="h-24" />
+                <img
+                    src="/assets/logo.webp"
+                    alt="Certify-NFT_logo"
+                    className="h-24 w-24"
+                    width="1000"
+                    height="1510"
+                  />
               </div>
             </div>
             
@@ -127,21 +133,21 @@ export default function Home() {
                 <div className="flex items-start space-x-3">
                   <CheckCircle className="h-6 w-6 text-green-500 mt-0.5" />
                   <div>
-                    <h4 className="font-semibold text-gray-900">For Event Organizers</h4>
+                    <h3 className="font-semibold text-gray-900">For Event Organizers</h3>
                     <p className="text-gray-600">Issue certificates easily and track attendance</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
                   <CheckCircle className="h-6 w-6 text-green-500 mt-0.5" />
                   <div>
-                    <h4 className="font-semibold text-gray-900">For Recipients</h4>
+                    <h3 className="font-semibold text-gray-900">For Recipients</h3>
                     <p className="text-gray-600">Own your certificates forever as NFTs</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
                   <CheckCircle className="h-6 w-6 text-green-500 mt-0.5" />
                   <div>
-                    <h4 className="font-semibold text-gray-900">For Verifiers</h4>
+                    <h3 className="font-semibold text-gray-900">For Verifiers</h3>
                     <p className="text-gray-600">Instantly verify authenticity on the blockchain</p>
                   </div>
                 </div>
