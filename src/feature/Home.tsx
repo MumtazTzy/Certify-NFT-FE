@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Award, Users, CheckCircle, ArrowRight, Zap, Globe, Lock } from 'lucide-react';
+import { Award, CheckCircle, ArrowRight, Zap, Globe, Lock } from 'lucide-react';
 
 export default function Home() {
   const features = [
