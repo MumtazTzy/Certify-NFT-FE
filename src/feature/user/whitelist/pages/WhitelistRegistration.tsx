@@ -9,13 +9,11 @@ import { useAuth } from '../../../auth/hooks/useAuth';
 import { getEventById, submitToWhitelist } from '../services/WhitelistServices';
 import { Event } from '../types';
 
-const getWhitelistStorageKey = (walletAddress: string, eventId: string) => {
-    return `whitelist-status-${walletAddress}-${eventId}`;
-};
+const getWhitelistStorageKey = (walletAddress: string, eventId: string) => `whitelist-status-${walletAddress}-${eventId}`;
 
 export default function WhitelistRegistration() {
     const { eventId } = useParams<{ eventId: string }>();
-    const { isAuthenticated, walletAddress } = useAuth();
+    const { isAuthenticated, walletAddress} = useAuth();
 
     const [event, setEvent] = useState<Event | null>(null);
     const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
@@ -31,48 +29,39 @@ export default function WhitelistRegistration() {
                 setLoading(false);
                 return;
             }
-
             if (isAuthenticated && walletAddress) {
-                const key = getWhitelistStorageKey(walletAddress, eventId);
-                if (localStorage.getItem(key)) {
+                if (localStorage.getItem(getWhitelistStorageKey(walletAddress, eventId))) {
                     setIsAlreadyRegistered(true);
                 }
             }
-            
             try {
-                const eventData = await getEventById(eventId);
-                setEvent(eventData);
+                setEvent(await getEventById(eventId));
             } catch (err) {
                 if (err instanceof Error) setPageError(err.message);
             } finally {
                 setLoading(false);
             }
         };
-        
         loadInitialData();
     }, [eventId, isAuthenticated, walletAddress]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!isAuthenticated || !walletAddress || !eventId) {
+        if (!isAuthenticated || !walletAddress || !eventId ) {
             setSubmitError("Authentication is required. Please log in again.");
             return;
         }
-
         setIsSubmitting(true);
         setSubmitError(null);
-        
         try {
             await submitToWhitelist(eventId, walletAddress);
-            const key = getWhitelistStorageKey(walletAddress, eventId);
-            localStorage.setItem(key, 'true');
+            localStorage.setItem(getWhitelistStorageKey(walletAddress, eventId), 'true');
             setIsAlreadyRegistered(true);
         } catch (err) {
             if (err instanceof Error) {
-                const key = getWhitelistStorageKey(walletAddress, eventId);
                 if (err.message.toLowerCase().includes('already registered')) {
+                    localStorage.setItem(getWhitelistStorageKey(walletAddress, eventId), 'true');
                     setIsAlreadyRegistered(true);
-                    localStorage.setItem(key, 'true');
                 } else {
                     setSubmitError(err.message);
                 }
@@ -84,9 +73,7 @@ export default function WhitelistRegistration() {
     
     const renderLoginPrompt = () => (
         <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-            <div className="bg-yellow-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Shield className="h-8 w-8 text-yellow-700" />
-            </div>
+            <div className="bg-yellow-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"><Shield className="h-8 w-8 text-yellow-700" /></div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Login Required</h1>
             <p className="text-gray-600 mb-6">You must be logged in to join an event's whitelist.</p>
             <Link to="/login" className="w-full block bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold transition-all">Go to Login Page</Link>
@@ -97,10 +84,8 @@ export default function WhitelistRegistration() {
         if (loading) return <Loader2 className="h-12 w-12 animate-spin text-blue-600" />;
         if (pageError) return <div className="text-center text-red-600 p-8 bg-white rounded-xl shadow-lg">{pageError}</div>;
         if (!event) return null;
-
         if (!isAuthenticated) return renderLoginPrompt();
         if (isAlreadyRegistered) return <WhitelistSuccess event={event} />;
-        
         return (
             <>
                 {submitError && <p className="text-center text-red-500 mb-4 bg-red-50 p-3 rounded-lg">{submitError}</p>}
