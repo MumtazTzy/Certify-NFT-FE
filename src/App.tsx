@@ -29,6 +29,7 @@ import ServerError from './feature/ServerError';
 import Help from './feature/Help';
 import TermsOfService from './feature/TermsOfService';
 import PrivacyPolicy from './feature/PrivacyPolicy';
+import UserDashboard from './feature/user/dashboard/UserDashboard';
 
 function App() {
   return (
@@ -62,6 +63,10 @@ function App() {
           <Route path="/vendor/event/:id/whitelist" element={<ViewWhitelist />} />
           <Route path="/vendor/event/:id/minted" element={<ViewMinted />} />
           <Route path="/vendor/profile" element={<VendorProfile />} />
+
+          {/* User Routes */}
+          <Route path="/user/dashboard" element={<UserDashboard />} />
+
 
           {/* Error Routes */}
           <Route path="/500" element={<ServerError />} />
