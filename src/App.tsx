@@ -30,6 +30,7 @@ import Help from './feature/Help';
 import TermsOfService from './feature/TermsOfService';
 import PrivacyPolicy from './feature/PrivacyPolicy';
 import UserDashboard from './feature/user/dashboard/UserDashboard';
+import UserProfile from './feature/user/UserProfile';
 
 function App() {
   return (
@@ -66,6 +67,7 @@ function App() {
 
           {/* User Routes */}
           <Route path="/user/dashboard" element={<UserDashboard />} />
+          <Route path="/profile" element={<UserProfile />} />
 
 
           {/* Error Routes */}
