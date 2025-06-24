@@ -40,3 +40,29 @@ export const submitToWhitelist = async (
     // Kembalikan data sukses dari API
     return result;
 };
+
+export const cancelWhitelist = async (
+    eventId: string,
+    walletAddress: string
+): Promise<{ message: string }> => {
+    // Asumsi endpoint untuk membatalkan adalah DELETE /api/users/whitelist
+    // dengan event_id di body.
+    const response = await fetch(`${API_BASE_URL}/api/users/whitelist/cancel`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            event_id: parseInt(eventId, 10),
+            wallet_address: walletAddress, // Pastikan wallet_address adalah string
+        }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+        throw new Error(result.message || 'Failed to cancel whitelist registration.');
+    }
+
+    return result;
+};

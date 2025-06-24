@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-
+import toast from 'react-hot-toast'; 
 // Import types, helpers, and components
 import { Event } from '../types';
-import { fetchEventById } from '../services/EventdetailServices';
+import { fetchEventById , } from '../services/EventdetailServices';
 import Loader from '../components/common/Loader';
 import EventHero from '../components/EventHero';
 import EventInfoCard from '../components/EventInfoCard';
@@ -13,8 +13,10 @@ import AgendaList from '../components/AgendaList';
 import StatusCard from '../components/StatusCard';
 import EventStatsCard from '../components/EventStatsCard';
 import ShareCard from '../components/ShareCard';
+import { cancelWhitelist } from '../../whitelist/services/WhitelistServices';
 
 import { useAuth } from '../../../auth/hooks/useAuth'; // <-- IMPORT useAuth
+import ConfirmationModal from '../../../../components/ConfirmationModal'; // <-- IMPORT MODAL
 
 const getWhitelistStorageKey = (walletAddress: string, eventId: string) => {
     return `whitelist-status-${walletAddress}-${eventId}`;
@@ -28,6 +30,41 @@ const EventDetail: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isWhitelisted, setIsWhitelisted] = useState<boolean>(false); // <-- STATE BARU
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+
+   const handleConfirmCancel = async () => {
+    setIsModalOpen(false); // Tutup modal terlebih dahulu
+
+    if (!id || !walletAddress) {
+      toast.error("Authentication error. Please log in again.");
+      return;
+    }
+
+    setIsCancelling(true);
+
+    const promise = cancelWhitelist(id, walletAddress); // Panggil API service
+
+    // Gunakan toast.promise untuk UX yang hebat
+    toast.promise(
+      promise,
+      {
+        loading: 'Leaving whitelist...',
+        success: (data) => {
+          // Update UI setelah berhasil
+          setIsWhitelisted(false);
+          if (walletAddress) {
+            localStorage.removeItem(getWhitelistStorageKey(walletAddress, id));
+          }
+          return data.message || "Successfully left the whitelist!";
+        },
+        error: (err) => err.message || "Failed to leave whitelist.",
+      }
+    );
+
+    // Reset status loading setelah promise selesai (baik sukses maupun gagal)
+    promise.finally(() => setIsCancelling(false));
+  };
 
   useEffect(() => {
       if (isAuthenticated && walletAddress && id) {
@@ -114,13 +151,26 @@ const EventDetail: React.FC = () => {
 
           {/* Sidebar */}
           <div className="lg:col-span-4 space-y-6">
-            <StatusCard event={event} isWhitelisted={isWhitelisted}/>
-            <EventStatsCard whitelisted={event.whitelisted} maxAttendees={event.maxattendees} />
-            <ShareCard />
+            <StatusCard 
+                event={event} 
+                isWhitelisted={isWhitelisted} 
+                onCancel={() => setIsModalOpen(true)} // Buka modal saat diklik
+                isCancelling={isCancelling} // Beri tahu StatusCard saat sedang loading
+              />
+              <EventStatsCard whitelisted={event.whitelisted} maxAttendees={event.maxattendees} />
+              <ShareCard />
           </div>
         </div>
       </div>
+      <ConfirmationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={handleConfirmCancel}
+        title="Leave Whitelist"
+        message="Are you sure you want to cancel your registration? You will lose your spot and may not be able to join again if the event is full."
+      />
     </div>
+    
   );
 };
 

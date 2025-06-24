@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { useAuth } from '../feature/auth/hooks/useAuth';
 import ProfileDropdown from '../feature/Profile';
 
@@ -98,5 +99,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         © 2025 Certify. All rights reserved.
       </footer>
     </div>
+    
   );
 }
+
+<Toaster position="top-center" />

@@ -25,3 +25,4 @@ export async function fetchUserEvents(walletAddress: string): Promise<Event[]> {
   const data = await res.json();
   return Array.isArray(data) ? data : [];
 }
+

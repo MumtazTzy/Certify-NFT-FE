@@ -1,12 +1,11 @@
 // src/components/StatusCard.tsx
-
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, CheckCircle } from 'lucide-react';
-import { useCountdown } from '../hooks/useCountdown'; // Pastikan path ini benar
-import { Event } from '../types'; // Pastikan path ini benar
+import { Clock, CheckCircle, XCircle } from 'lucide-react';
+import { useCountdown } from '../hooks/useCountdown';
+import { Event } from '../types';
 
-// Sub-komponen untuk menampilkan countdown timer, dipisahkan agar rapi
+// Sub-komponen untuk menampilkan countdown timer
 interface CountdownTimerProps {
   timeLeft: {
     days: number;
@@ -32,19 +31,16 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({ timeLeft }) => (
 // Prop interface untuk komponen utama StatusCard
 interface StatusCardProps {
     event: Event;
-    isWhitelisted: boolean; // Prop baru untuk status whitelist
+    isWhitelisted: boolean;
+    onCancel: () => void; // Callback untuk handle pembatalan
+    isCancelling: boolean; // Status pembatalan.
+    
 }
 
-const StatusCard: React.FC<StatusCardProps> = ({ event, isWhitelisted }) => {
-    // Gunakan custom hook untuk menghitung waktu mundur
+const StatusCard: React.FC<StatusCardProps> = ({ event, isWhitelisted, onCancel }) => {
     const { isTimeUp, ...timeLeft } = useCountdown(event.start_date);
-
-    // Event dianggap 'upcoming' jika waktu belum habis DAN status dari API bukan 'completed'
     const isUpcoming = !isTimeUp && event.status !== 'completed';
 
-    // --- RENDER LOGIC ---
-
-    // 1. Tampilan jika event masih AKAN DATANG
     if (isUpcoming) {
         return (
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
@@ -53,17 +49,23 @@ const StatusCard: React.FC<StatusCardProps> = ({ event, isWhitelisted }) => {
                     Event Starts In
                 </h3>
                 
+                {/* Countdown Timer diaktifkan kembali */}
                 <CountdownTimer timeLeft={timeLeft} />
 
-                {/* Logika Dinamis untuk Tombol Whitelist */}
                 {isWhitelisted ? (
-                    // Tampilan jika pengguna SUDAH terdaftar di whitelist
-                    <div className="text-center">
+                    // Tampilan jika pengguna SUDAH terdaftar
+                    <div className="text-center space-y-3">
                         <div className="bg-green-100 text-green-800 py-3 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2">
                             <CheckCircle className="h-5 w-5" />
                             <span>You're on the Whitelist!</span>
                         </div>
-                        <p className="text-xs text-green-700 mt-2">You are eligible to receive the certificate.</p>
+                        <button
+                            onClick={onCancel}
+                            className="w-full inline-flex items-center justify-center space-x-2 bg-red-100 hover:bg-red-200 text-red-700 py-2 px-4 rounded-lg font-semibold transition-colors text-sm"
+                        >
+                            <XCircle className="h-4 w-4" />
+                            <span>Leave Whitelist</span>
+                        </button>
                     </div>
                 ) : (
                     // Tampilan default jika BELUM terdaftar
@@ -78,8 +80,7 @@ const StatusCard: React.FC<StatusCardProps> = ({ event, isWhitelisted }) => {
         );
     }
 
-    // 2. Tampilan jika event sudah SELESAI
-    // Ini akan menjadi fallback jika `isUpcoming` adalah false
+    // Tampilan jika event sudah SELESAI
     return (
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">
