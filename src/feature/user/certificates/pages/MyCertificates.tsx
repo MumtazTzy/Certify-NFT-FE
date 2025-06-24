@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Award, Calendar } from 'lucide-react';
 import WalletConnectPrompt from '../components/WalletConnectPrompt';
-import { useAuth } from '../../auth/hooks/useAuth';
+import { useAuth } from '../../../auth/hooks/useAuth';
 import { Certificate, fetchCertificatesByWallet } from '../services/certificateService';
 
 // OPTIONAL: Card minimal untuk demo

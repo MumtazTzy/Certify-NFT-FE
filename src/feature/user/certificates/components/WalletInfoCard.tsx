@@ -1,5 +1,5 @@
 import { Wallet } from 'lucide-react';
-import { useAuth } from '../../auth/hooks/useAuth';
+import { useAuth } from '../../../auth/hooks/useAuth';
 
 interface WalletInfoCardProps {
   total: number;

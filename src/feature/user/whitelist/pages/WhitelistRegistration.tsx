@@ -5,7 +5,7 @@ import { ArrowLeft, Loader2, Shield } from 'lucide-react';
 
 import WhitelistForm from '../components/WhitelistForm';
 import WhitelistSuccess from '../components/WhitelistSuccess';
-import { useAuth } from '../../auth/hooks/useAuth';
+import { useAuth } from '../../../auth/hooks/useAuth';
 import { getEventById, submitToWhitelist } from '../services/WhitelistServices';
 import { Event } from '../types';
 

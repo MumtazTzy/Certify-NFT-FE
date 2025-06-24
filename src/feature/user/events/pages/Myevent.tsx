@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, MapPin, Users, CalendarDays } from 'lucide-react';
 import WalletConnectPrompt from '../../certificates/components/WalletConnectPrompt';
-import { useAuth } from '../../auth/hooks/useAuth';
+import { useAuth } from '../../../auth/hooks/useAuth';
 import { Event, fetchUserEvents } from '../services/MyeventServices';
 
 // Card component for event
