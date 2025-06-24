@@ -14,11 +14,33 @@ import StatusCard from '../components/StatusCard';
 import EventStatsCard from '../components/EventStatsCard';
 import ShareCard from '../components/ShareCard';
 
+import { useAuth } from '../../../auth/hooks/useAuth'; // <-- IMPORT useAuth
+
+const getWhitelistStorageKey = (walletAddress: string, eventId: string) => {
+    return `whitelist-status-${walletAddress}-${eventId}`;
+};
+
 const EventDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { isAuthenticated, walletAddress } = useAuth(); // <-- GUNAKAN AUTH CONTEXT
+
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isWhitelisted, setIsWhitelisted] = useState<boolean>(false); // <-- STATE BARU
+
+  useEffect(() => {
+      if (isAuthenticated && walletAddress && id) {
+          const key = getWhitelistStorageKey(walletAddress, id);
+          if (localStorage.getItem(key)) {
+              setIsWhitelisted(true);
+          } else {
+              setIsWhitelisted(false);
+          }
+      } else {
+          setIsWhitelisted(false);
+      }
+  }, [id, isAuthenticated, walletAddress]); // Dijalankan saat user/event berubah
 
   useEffect(() => {
     const loadEvent = async (eventId: string) => {
@@ -92,7 +114,7 @@ const EventDetail: React.FC = () => {
 
           {/* Sidebar */}
           <div className="lg:col-span-4 space-y-6">
-            <StatusCard event={event} />
+            <StatusCard event={event} isWhitelisted={isWhitelisted}/>
             <EventStatsCard attendees={event.attendees} maxAttendees={event.maxattendees} />
             <ShareCard />
           </div>
