@@ -95,7 +95,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <main className="flex-1">{children}</main>
 
       <footer className="bg-white border-t py-8 text-center text-gray-500">
-        © 2024 Certify. All rights reserved.
+        © 2025 Certify. All rights reserved.
       </footer>
     </div>
   );
