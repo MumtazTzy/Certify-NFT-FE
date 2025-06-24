@@ -49,14 +49,21 @@ export default function EventCard({ event }: Props) {
       </div>
 
       <div className="flex flex-col flex-1 p-4 md:p-6">
-        <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-1 md:mb-2 group-hover:text-blue-600 transition-colors line-clamp-2 min-h-[2.5rem]">
+        <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-1 md:mb-2 group-hover:text-blue-600 transition-colors line-clamp-2 ">
           {event.title ? (
             event.title
           ) : (
             <span className="inline-block bg-gray-200 animate-pulse rounded w-1/2 h-5"></span>
           )}
         </h3>
-        
+        <p className="text-gray-600 mb-1 md:mb-1 text-sm leading-relaxed line-clamp-1 min-h-[2.5rem]">
+          <span className="font-semibold">Organizer: </span>
+          {event.organizer ? (
+            event.organizer
+          ) : (
+            <span className="inline-block bg-gray-100 animate-pulse rounded w-3/4 h-4"></span>
+          )}
+        </p>
         <p className="text-gray-600 mb-3 md:mb-4 text-sm leading-relaxed line-clamp-2 min-h-[2.5rem]">
           {event.description ? (
             event.description
@@ -94,8 +101,8 @@ export default function EventCard({ event }: Props) {
           <div className="flex items-center space-x-2 text-xs md:text-sm text-gray-600 min-h-[1.25rem]">
             <Users className="h-4 w-4" />
             <span>
-              {typeof event.attendees === "number" && typeof event.maxAttendees === "number"
-                ? `${event.attendees}/${event.maxAttendees} attendees`
+              {typeof event.whitelisted === "number" && typeof event.maxAttendees === "number"
+                ? `${event.whitelisted}/${event.maxAttendees} attendees`
                 : <span className="inline-block bg-gray-100 animate-pulse rounded w-14 h-4"></span>
               }
             </span>
@@ -108,8 +115,8 @@ export default function EventCard({ event }: Props) {
               className="bg-blue-600 h-2 rounded-full transition-all duration-300"
               style={{
                 width:
-                  typeof event.attendees === "number" && typeof event.maxAttendees === "number" && event.maxAttendees > 0
-                    ? `${Math.min((event.attendees / event.maxAttendees) * 100, 100)}%`
+                  typeof event.whitelisted === "number" && typeof event.maxAttendees === "number" && event.maxAttendees > 0
+                    ? `${Math.min((event.whitelisted / event.maxAttendees) * 100, 100)}%`
                     : "0%",
               }}
             ></div>

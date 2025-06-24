@@ -103,7 +103,7 @@ const EventDetail: React.FC = () => {
           {/* Main Content */}
           <div className="lg:col-span-8 space-y-8">
             <EventHero id={event.id} title={event.title} organizer={event.organizer} picture={event.picture} />
-            <EventInfoCard date={event.start_date} location={event.location} attendees={event.attendees} maxAttendees={event.maxattendees} />
+            <EventInfoCard date={event.start_date} location={event.location} Whitelisted={event.whitelisted} maxAttendees={event.maxattendees} />
             <div className="bg-white rounded-2xl shadow-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-3">About This Event</h3>
               <p className="text-gray-700 leading-relaxed">{event.description}</p>
@@ -115,7 +115,7 @@ const EventDetail: React.FC = () => {
           {/* Sidebar */}
           <div className="lg:col-span-4 space-y-6">
             <StatusCard event={event} isWhitelisted={isWhitelisted}/>
-            <EventStatsCard attendees={event.attendees} maxAttendees={event.maxattendees} />
+            <EventStatsCard whitelisted={event.whitelisted} maxAttendees={event.maxattendees} />
             <ShareCard />
           </div>
         </div>

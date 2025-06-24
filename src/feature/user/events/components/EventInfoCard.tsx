@@ -4,11 +4,11 @@ import { Calendar, MapPin, Users, Award } from 'lucide-react';
 interface EventInfoCardProps {
   date: string;
   location: string;
-  attendees: number;
+  Whitelisted: number;
   maxAttendees: number;
 }
 
-const EventInfoCard: React.FC<EventInfoCardProps> = ({ date, location, attendees, maxAttendees }) => (
+const EventInfoCard: React.FC<EventInfoCardProps> = ({ date, location, Whitelisted, maxAttendees }) => (
   <div className="bg-white rounded-2xl shadow-lg p-6">
     <h2 className="text-2xl font-bold text-gray-900 mb-4">Event Details</h2>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -33,8 +33,8 @@ const EventInfoCard: React.FC<EventInfoCardProps> = ({ date, location, attendees
       <div className="flex items-center space-x-3">
         <Users className="h-5 w-5 text-blue-600" />
         <div>
-          <p className="font-semibold text-gray-900">Attendees</p>
-          <p className="text-gray-600">{attendees}/{maxAttendees} registered</p>
+          <p className="font-semibold text-gray-900">Registration</p>
+          <p className="text-gray-600">{Whitelisted}/{maxAttendees} registered</p>
         </div>
       </div>
       <div className="flex items-center space-x-3">

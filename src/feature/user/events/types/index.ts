@@ -21,5 +21,6 @@ export interface Event {
   attendees: number;
   requirements: string[];
   agenda: AgendaItem[];
+  whitelisted: number;
   organizer: string;
 }

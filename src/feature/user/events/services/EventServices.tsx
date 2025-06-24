@@ -4,9 +4,10 @@ export interface Event {
   date: string;
   location: string;
   status: 'upcoming' | 'minting' | 'closed';
-  attendees: number;
+  whitelisted: number;
   maxAttendees: number;
   description: string;
+  organizer: string;
   image: string;
 }
 
@@ -23,8 +24,9 @@ export async function getEvents(): Promise<Event[]> {
     date: item.start_date || new Date().toISOString(),
     location: item.location || 'Unknown',
     status: item.status as 'upcoming' | 'minting' | 'closed' || 'upcoming',
-    attendees: item.attendees || 0,
+    whitelisted: item.whitelisted || 0,
     maxAttendees: item.maxattendees || 100,
+    organizer: item.organizer || 'Unknown',
     description: item.description || '',
       image: item.picture
       ? `https://api.gpadaka.com/${item.picture}`
