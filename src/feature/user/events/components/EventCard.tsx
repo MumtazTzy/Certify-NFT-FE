@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, Users, Clock, ArrowRight } from 'lucide-react';
+import { Calendar, MapPin, Users, ArrowRight, Sparkles, XCircle, CheckCircle } from 'lucide-react';
 import { Event } from '../services/EventServices';
 
 interface Props {
@@ -7,20 +7,30 @@ interface Props {
 }
 
 export default function EventCard({ event }: Props) {
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: Event['status']) => {
     switch (status) {
       case 'upcoming': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'minting': return 'bg-green-100 text-green-800 border-green-200';
-      case 'closed': return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'ongoing': return 'bg-green-100 text-green-800 border-green-200';
+      case 'minting': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
+      case 'ended': return 'bg-gray-100 text-gray-800 border-gray-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: Event['status']) => {
     switch (status) {
       case 'upcoming': return <Calendar className="h-4 w-4" />;
-      case 'minting': return <Clock className="h-4 w-4" />;
-      case 'closed': return <div className="h-4 w-4 bg-gray-400 rounded-full"></div>;
+      // Ikon "live" dengan animasi pulse untuk status 'ongoing'
+      case 'ongoing': return (
+        <span className="relative flex h-3 w-3 items-center justify-center">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+        </span>
+      );
+      case 'minting': return <Sparkles className="h-4 w-4" />;
+      case 'cancelled': return <XCircle className="h-4 w-4" />;
+      case 'ended': return <CheckCircle className="h-4 w-4" />;
       default: return <div className="h-4 w-4 bg-gray-400 rounded-full"></div>;
     }
   };

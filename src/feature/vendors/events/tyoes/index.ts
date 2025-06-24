@@ -1,5 +1,4 @@
 // src/types/index.ts
-
 export interface AgendaItem {
   time: string;
   topic: string;
@@ -9,18 +8,17 @@ export interface Event {
   id: number;
   title: string;
   description: string;
-  vendor_id: number;
+  organizer: string;
   start_date: string;
   end_date: string;
-  status: 'upcoming' | 'ongoing' | 'ended' | 'cancelled' | 'minting';
-  created_at: string;
-  updated_at: string;
+  location: string;
+  status: 'upcoming' | 'completed' | 'active' | 'minting' | 'closed'; // Status yang mungkin
   picture: string;
   maxattendees: number;
-  location: string; // <-- ADD THIS LINE
   attendees: number;
+  whitelisted: number; // Jumlah yang di-whitelist
+  certificatesMinted?: number; // Opsional jika API tidak selalu menyediakannya
+  mintingActive?: boolean; // Opsional
   requirements: string[];
   agenda: AgendaItem[];
-  whitelisted: number;
-  organizer: string;
 }

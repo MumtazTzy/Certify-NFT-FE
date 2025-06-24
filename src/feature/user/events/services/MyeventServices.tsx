@@ -5,7 +5,7 @@ export interface Event {
   start_date: string;
   end_date: string;
   location: string;
-  status: 'upcoming' | 'ongoing' | 'completed';
+  status: 'upcoming' | 'ongoing' | 'ended' | 'cancelled' | 'minting';
   attendees: number;
   maxattendees: number;
   picture: string;

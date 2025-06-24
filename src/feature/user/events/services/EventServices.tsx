@@ -3,7 +3,7 @@ export interface Event {
   title: string;
   date: string;
   location: string;
-  status: 'upcoming' | 'minting' | 'closed';
+  status: 'upcoming' | 'ongoing' | 'ended' | 'cancelled' | 'minting';
   whitelisted: number;
   maxAttendees: number;
   description: string;
