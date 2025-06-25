@@ -33,6 +33,8 @@ import TermsOfService from './feature/TermsOfService';
 import PrivacyPolicy from './feature/PrivacyPolicy';
 import UserDashboard from './feature/user/dashboard/UserDashboard';
 import UserProfile from './feature/user/UserProfile';
+import UploadCertificateForm from './feature/vendors/events/components/UploadCertificateForm';
+import MintCertificateButton from './feature/user/certificates/components/MintCeritificateButton';
 
 // 3. Definisikan semua rute Anda sebagai objek JavaScript di luar komponen App
 const router = createBrowserRouter([
@@ -70,10 +72,12 @@ const router = createBrowserRouter([
       { path: 'vendor/event/:id/whitelist', element: <ViewWhitelist /> },
       { path: 'vendor/event/:id/minted', element: <ViewMinted /> },
       { path: 'vendor/profile', element: <VendorProfile /> },
+      { path: 'vendor/event/:id/upload-certificate', element: <UploadCertificateForm eventId={':id'} /> },
 
       // User Routes
       { path: 'user/dashboard', element: <UserDashboard /> },
       { path: 'profile', element: <UserProfile /> },
+     
 
       // Error Routes
       { path: '500', element: <ServerError /> },

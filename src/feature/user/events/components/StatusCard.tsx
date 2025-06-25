@@ -89,9 +89,20 @@ const StatusCard: React.FC<StatusCardProps> = ({ event, isWhitelisted, onCancel 
             <p className="text-gray-700 mb-4 text-center">
                 This event has already ended.
             </p>
+            {/* Tampilkan tombol mint certificate jika event ended */}
+            {event.status === 'ended' && (
+                <div className="mt-4 w-full">
+                    <Link
+                        to={`/mint/${event.id}`}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-semibold text-center block transition-all"
+                    >
+                        Mint Certificate
+                    </Link>
+                </div>
+            )}
             <button
                 disabled
-                className="w-full bg-gray-300 text-gray-500 py-3 px-4 rounded-lg font-semibold cursor-not-allowed"
+                className="w-full bg-gray-300 text-gray-500 py-3 px-4 rounded-lg font-semibold cursor-not-allowed mt-2"
             >
                 Event Closed
             </button>
