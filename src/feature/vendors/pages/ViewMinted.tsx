@@ -18,7 +18,7 @@ export default function ViewMinted() {
   // Mock event data
   const event = {
     id: id,
-    title: 'Web3 Development Workshop',
+    title: 'User minted certificates',
     date: '2024-04-15'
   };
 
