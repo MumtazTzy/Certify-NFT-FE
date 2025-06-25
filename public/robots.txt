@@ -1,0 +1,32 @@
+# See https://www.robotstxt.org/robotstxt.html for documentation on how to use the robots.txt file
+#
+# To control which web crawlers can crawl your site and which files they can access.
+
+User-agent: *
+
+# Allow all crawlers access to the site
+Allow: /
+
+# Disallow pages that require authentication or are user/vendor specific
+Disallow: /login
+Disallow: /register-role
+Disallow: /register-user
+Disallow: /register-vendor
+Disallow: /profile
+Disallow: /user-profile
+Disallow: /my-certificates
+Disallow: /my-events
+Disallow: /whitelist-registration
+Disallow: /vendor-dashboard
+Disallow: /vendor-profile
+Disallow: /mint
+Disallow: /view-minted
+Disallow: /verify-certificate
+Disallow: /create-event
+Disallow: /manage-event/
+Disallow: /view-whitelist/
+Disallow: /server-error
+
+# It's a good practice to have a sitemap.
+# You should generate a sitemap.xml and add its URL here.
+# Sitemap: https://your-domain.com/sitemap.xml 
