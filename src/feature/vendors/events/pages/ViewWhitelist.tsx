@@ -20,7 +20,7 @@ export default function ViewWhitelist() {
 
   // Mock data event, bisa juga diambil dari API lain jika ada
   const event = {
-    title: 'Web3 Development Workshop'
+    title: 'User Whitelisted'
   };
 
   const filteredWhitelist = useMemo(() => {
