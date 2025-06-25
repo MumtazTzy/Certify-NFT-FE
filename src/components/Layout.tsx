@@ -3,7 +3,6 @@ import { Link, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuth } from '../feature/auth/hooks/useAuth';
 import ProfileDropdown from '../feature/Profile';
-
 export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
@@ -52,7 +51,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <Link to="/login" className="text-gray-700 hover:text-blue-600 px-3 py-2">
                   Login
                 </Link>
-                <Link to="/register" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                <Link
+                  to="/register"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                >
                   Register
                 </Link>
               </>
@@ -98,6 +100,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <footer className="bg-white border-t py-8 text-center text-gray-500">
         © 2025 Certify. All rights reserved.
       </footer>
+
+      {/* ✅ Letakkan Toaster di dalam layout */}
+      <Toaster position="top-center" />
     </div>
   );
 }
