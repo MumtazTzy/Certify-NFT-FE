@@ -4,6 +4,8 @@ import { Calendar, Award, Users, BarChart3, TrendingUp, User } from 'lucide-reac
 import { useAuth } from '../../auth/hooks/useAuth';
 import { Event, fetchUserEvents } from '../events/services/MyeventServices';
 import { Certificate, fetchCertificatesByWallet } from '../certificates/services/certificateService';
+import { connectWallet, signMessage } from '../../auth/lib/wallet';
+import { loginWithWallet } from '../../auth/services/authServices';
 
 export default function UserDashboard() {
   const { isAuthenticated, walletAddress, login } = useAuth();
@@ -11,6 +13,8 @@ export default function UserDashboard() {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [loadingCertificates, setLoadingCertificates] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectError, setConnectError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!walletAddress) return;
@@ -84,16 +88,37 @@ export default function UserDashboard() {
           <User className="mx-auto h-12 w-12 text-blue-600 mb-4" />
           <h2 className="text-2xl font-bold mb-2">Welcome to Your Dashboard</h2>
           <p className="text-gray-600 mb-6">Please connect your wallet to view your dashboard.</p>
+          {connectError && <p className="text-red-500 mb-2">{connectError}</p>}
           <button
-            onClick={() => {
-              // Simulasi: ganti dengan real wallet connect logic
-              const dummyToken = 'dummyToken';
-              const dummyAddress = '0x12d7A5E92D17dcb068e512660B24A9A3072a755e';
-              login(dummyToken, dummyAddress);
+            onClick={async () => {
+              setConnectError(null);
+              setIsConnecting(true);
+              try {
+                if (typeof window.ethereum === 'undefined') {
+                  setConnectError('MetaMask is not installed. Please install it first.');
+                  return;
+                }
+                const { signer, address } = await connectWallet();
+                await signMessage(signer, `Login attempt at ${new Date().toISOString()}`);
+                const data = await loginWithWallet(address);
+                if (data.isNewUser) {
+                  // Login parsial, role null
+                  login(address, null);
+                  // Navigasi ke halaman pemilihan role jika perlu
+                  // navigate('/register'); // Uncomment jika ingin redirect otomatis
+                } else {
+                  login(address, data.role);
+                }
+              } catch (err: any) {
+                setConnectError(err.message || 'Failed to connect wallet.');
+              } finally {
+                setIsConnecting(false);
+              }
             }}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold"
+            disabled={isConnecting}
           >
-            Connect Wallet
+            {isConnecting ? 'Connecting...' : 'Connect Wallet'}
           </button>
         </div>
       </div>
