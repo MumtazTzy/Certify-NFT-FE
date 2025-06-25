@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { Event } from '../types'; 
 import ConfirmationModal from '../../../../components/ConfirmationModal';
 import { useAuth } from '../../../auth/hooks/useAuth';
+import { useWhitelist } from '../../events/hooks/useWhitelist';
 
 // --- API Service Functions ---
 const API_BASE_URL = 'https://api.gpadaka.com/api3';
@@ -41,6 +42,8 @@ export default function ManageEvent() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { isAuthenticated } = useAuth(); 
+    const { whitelist, loading: whitelistLoading } = useWhitelist(id);
+    const [attendance, setAttendance] = useState<Record<string, boolean>>({});
 
     const [event, setEvent] = useState<Event | null>(null);
     const [loading, setLoading] = useState(true);
@@ -86,6 +89,11 @@ export default function ManageEvent() {
         });
     };
 
+    // Handler to mark user as present
+    const handleMarkPresent = (userId: string) => {
+        setAttendance((prev) => ({ ...prev, [userId]: true }));
+    };
+
     if (loading) {
         return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-purple-600" /></div>;
     }
@@ -125,7 +133,6 @@ export default function ManageEvent() {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* ... (Konten lainnya tetap sama, tetapi sekarang akan menampilkan data event yang mungkin sudah 'canceled') ... */}
                         <div className="lg:col-span-2 space-y-6">
                             <div className="bg-white rounded-2xl shadow-lg p-6">
                                 <h2 className="text-xl font-bold text-gray-900 mb-4">Event Details</h2>
@@ -142,7 +149,6 @@ export default function ManageEvent() {
                                 <div className="relative h-48 rounded-xl overflow-hidden"><img src={`${API_IMAGE_BASE_URL}/${event.picture}`} alt={event.title} className="w-full h-full object-cover"/></div>
                             </div>
                         </div>
-
                         <div className="space-y-6">
                             <div className="bg-white rounded-2xl shadow-lg p-6">
                                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Event Status</h3>
@@ -167,6 +173,44 @@ export default function ManageEvent() {
                                 <div className="space-y-3"><div className="flex justify-between items-center"><span className="text-gray-600">Registration Rate</span><span className="font-semibold">{registrationRate}%</span></div><div className="bg-gray-200 rounded-full h-2"><div className="bg-blue-600 h-2 rounded-full" style={{ width: `${registrationRate}%` }}></div></div><div className="flex justify-between items-center pt-2"><span className="text-gray-600">Spots Remaining</span><span className="font-semibold">{spotsRemaining}</span></div></div>
                             </div>
                         </div>
+                    </div>
+                    {/* Attendance Table spanning all columns */}
+                    <div className="bg-white rounded-2xl shadow-lg p-6 w-full mt-8 overflow-x-auto">
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">Attendance</h2>
+                        {whitelistLoading ? (
+                            <div className="text-center py-8">Loading whitelist...</div>
+                        ) : (
+                            <table className="w-full">
+                                <thead>
+                                    <tr>
+                                        <th className="text-left py-2 px-4">Name</th>
+                                        <th className="text-left py-2 px-4">Email</th>
+                                        <th className="text-left py-2 px-4">Wallet</th>
+                                        <th className="text-left py-2 px-4">Attendance</th>
+                                        <th className="text-left py-2 px-4">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {whitelist.map((user) => (
+                                        <tr key={user.id}>
+                                            <td className="py-2 px-4">{user.name}</td>
+                                            <td className="py-2 px-4">{user.email}</td>
+                                            <td className="py-2 px-4 font-mono text-xs">{user.walletAddress}</td>
+                                            <td className="py-2 px-4">{attendance[user.id] ? 'Present' : 'Absent'}</td>
+                                            <td className="py-2 px-4">
+                                                <button
+                                                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded disabled:bg-gray-300"
+                                                    disabled={attendance[user.id]}
+                                                    onClick={() => handleMarkPresent(user.id)}
+                                                >
+                                                    Mark as Present
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
                     </div>
                 </div>
             </div>

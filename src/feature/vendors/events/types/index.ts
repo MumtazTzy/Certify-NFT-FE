@@ -61,6 +61,7 @@ export interface WhitelistEntry {
   walletAddress: string;
   registrationDate: string;
   status: 'active' | 'revoked';
+  attendance?: boolean; // true if present, false or undefined if absent
 }
 
 // Tipe data mentah dari API
