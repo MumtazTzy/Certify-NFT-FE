@@ -80,7 +80,7 @@ export default function CreateEventForm({ onSubmit, isSubmitting }: CreateEventF
     fd.append('title', title);
     fd.append('description', description);
     // ✅ Mengambil vendor_id dari user yang sedang login
-    fd.append('vendor_id', String(user.vendor_id)); // Asumsi user object punya vendor_id
+    fd.append('wallet_address', String(user.walletAddress)); // Asumsi user object punya vendor_id
     fd.append('location', location);
     fd.append('maxattendees', maxAttendees || '0');
     fd.append('status', 'upcoming'); // Status untuk event baru
