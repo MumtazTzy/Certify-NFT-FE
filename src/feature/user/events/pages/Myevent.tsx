@@ -1,123 +1,112 @@
-// src/pages/user/MyEventsPage.tsx
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, Users, CalendarDays } from 'lucide-react';
-import WalletConnectPrompt from '../../certificates/components/WalletConnectPrompt';
+import { Calendar, Search, CheckSquare, Clock, XSquare, Award, Frown } from 'lucide-react';
 import { useAuth } from '../../../auth/hooks/useAuth';
-import { Event, fetchUserEvents } from '../services/MyeventServices';
+import { fetchUserEvents, Event } from '../services/MyeventServices';
+import EventCard from '../components/MyEventCard';
 
-// Card component for event
-const EventCard = ({ event }: { event: Event }) => (
-  <div className="bg-white p-4 rounded-lg shadow">
-    <h3 className="text-lg font-semibold mb-1">{event.title}</h3>
-    <p className="text-sm text-gray-500 mb-3">{event.description}</p>
-    <div className="flex flex-col gap-1 text-sm text-gray-600 mb-3">
-      <span className="flex items-center gap-1">
-        <Calendar className="w-4 h-4" />
-        {new Date(event.start_date).toLocaleDateString()}
-      </span>
-      <span className="flex items-center gap-1">
-        <MapPin className="w-4 h-4" />
-        {event.location}
-      </span>
-      <span className="flex items-center gap-1">
-        <Users className="w-4 h-4" />
-        {event.attendees}/{event.maxattendees} attendees
-      </span>
+// Komponen helper untuk UserStatusBadge
+const UserStatusBadge = ({ status }: { status: Event['user_status'] }) => {
+  if (!status) return null;
+  const statusInfo = {
+    present: { text: 'You were present', icon: <CheckSquare className="w-4 h-4" />, color: 'text-green-800 bg-green-100 border border-green-200' },
+    registered: { text: 'Registered', icon: <Clock className="w-4 h-4" />, color: 'text-blue-800 bg-blue-100 border border-blue-200' },
+    absent: { text: 'You were absent', icon: <XSquare className="w-4 h-4" />, color: 'text-red-800 bg-red-100 border border-red-200' },
+    claimed: { text: 'Certificate Claimed', icon: <Award className="w-4 h-4" />, color: 'text-purple-800 bg-purple-100 border border-purple-200' },
+  };
+  const currentStatus = statusInfo[status] || { text: status, icon: null, color: 'text-gray-700 bg-gray-100' };
+  return (
+    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-t-lg text-sm font-semibold ${currentStatus.color}`}>
+      {currentStatus.icon}
+      <span>{currentStatus.text}</span>
     </div>
-    <Link
-      to={`/events/${event.id}`}
-      className="text-blue-600 hover:underline block"
-    >
-      View Details
-    </Link>
+  );
+};
+
+// Komponen helper lainnya
+const LoadingSkeleton = () => (
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    {[...Array(3)].map((_, i) => (
+      <div key={i} className="bg-white rounded-2xl shadow-lg overflow-hidden animate-pulse">
+        <div className="bg-gray-200 aspect-video w-full"></div>
+        <div className="p-6"><div className="h-6 bg-gray-200 rounded w-3/4 mb-3"></div><div className="h-10 bg-gray-200 rounded w-full mb-4"></div><div className="h-4 bg-gray-200 rounded w-1/2"></div></div>
+      </div>
+    ))}
+  </div>
+);
+
+const NotAuthenticatedPrompt = () => (
+  <div className="max-w-7xl mx-auto px-4 py-20 text-center">
+    <h2 className="text-3xl font-bold text-gray-800">View Your Registered Events</h2>
+    <p className="text-gray-600 mt-2 mb-6 max-w-xl mx-auto">Please log in with your wallet to see a personalized list of all the events you have joined.</p>
+    <Link to="/login" className="bg-purple-600 text-white font-semibold py-3 px-8 rounded-lg hover:bg-purple-700 transition-transform hover:scale-105">Go to Login</Link>
+  </div>
+);
+
+const EmptyState = ({ isSearching }: { isSearching: boolean }) => (
+  <div className="text-center py-20 bg-white rounded-2xl shadow-lg">
+    {isSearching ? (
+      <><Frown className="h-16 w-16 text-gray-400 mx-auto mb-4" /><h3 className="text-2xl font-semibold mb-2">No Events Found</h3><p className="text-gray-500 max-w-md mx-auto">Your search did not match any of your registered events. Please try a different keyword.</p></>
+    ) : (
+      <><Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" /><h3 className="text-2xl font-semibold mb-2">You Haven't Joined Any Events Yet</h3><p className="text-gray-500 mb-6 max-w-md mx-auto">Explore our available events and start your journey to earn new certificates!</p><Link to="/events" className="inline-flex items-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold"><span>Browse All Events</span></Link></>
+    )}
   </div>
 );
 
 export default function MyEventsPage() {
-  const { isAuthenticated, walletAddress, login } = useAuth();
-  const [searchTerm, setSearchTerm] = useState('');
+  const { isAuthenticated, walletAddress } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!walletAddress) return;
-
-    const load = async () => {
+    if (!isAuthenticated || !walletAddress) {
+      setLoading(false);
+      return;
+    }
+    const loadMyEvents = async () => {
       setLoading(true);
       try {
         const data = await fetchUserEvents(walletAddress);
         setEvents(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.error('Failed to fetch events:', err);
-        setEvents([]); // fallback
-      } finally {
-        setLoading(false);
-      }
+      } catch (err) { console.error('Failed to fetch my events:', err); setEvents([]); }
+      finally { setLoading(false); }
     };
+    loadMyEvents();
+  }, [isAuthenticated, walletAddress]);
 
-    load();
-  }, [walletAddress]);
+  const filteredEvents = events.filter((e) => e.title.toLowerCase().includes(searchTerm.toLowerCase()));
 
-  const filtered = events.filter((e) =>
-    e.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    e.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  if (!isAuthenticated) {
-    return (
-      <WalletConnectPrompt
-        onConnect={() => {
-          const dummyToken = 'dummyToken';
-          const dummyAddress = '0x12d7A5E92D17dcb068e512660B24A9A3072a755e';
-          login(dummyToken, dummyAddress);
-        }}
-      />
-    );
-  }
+  if (!isAuthenticated) { return <NotAuthenticatedPrompt />; }
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <h1 className="text-4xl font-bold text-gray-900 mb-6">My Events</h1>
-
-      <input
-        type="text"
-        placeholder="Search events..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full mb-6 p-3 border border-gray-300 rounded-lg"
-      />
-
-      {loading ? (
-        <p>Loading events...</p>
-      ) : filtered.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((event) => (
-            <EventCard key={event.id} event={event} />
-          ))}
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">My Events</h1>
+        <p className="text-lg text-gray-600 mb-8">A record of all events you have registered for.</p>
+        
+        <div className="relative mb-8">
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <input type="text" placeholder="Search in your events by title..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"/>
         </div>
-      ) : (
-        <div className="text-center py-12">
-          <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CalendarDays className="h-8 w-8 text-gray-400" />
+
+        {loading ? (
+          <LoadingSkeleton />
+        ) : filteredEvents.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-12 gap-x-8">
+            {filteredEvents.map((event) => (
+              <div key={event.id} className="flex flex-col">
+                <UserStatusBadge status={event.user_status} />
+                <div className="flex-grow rounded-b-2xl overflow-hidden">
+                  <EventCard event={event} />
+                </div>
+              </div>
+            ))}
           </div>
-          <h3 className="text-xl font-semibold mb-2">
-            {searchTerm ? 'No events found' : 'No events yet'}
-          </h3>
-          <p className="text-gray-600 mb-6">
-            {searchTerm
-              ? 'Try adjusting your search'
-              : 'Explore and join your first event!'}
-          </p>
-          <Link
-            to="/events"
-            className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold"
-          >
-            <Calendar className="h-5 w-5" />
-            <span>Browse Events</span>
-          </Link>
-        </div>
-      )}
+        ) : (
+          <EmptyState isSearching={!!searchTerm} />
+        )}
+      </div>
     </div>
   );
 }
