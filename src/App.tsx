@@ -1,8 +1,10 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+// App.tsx (Versi Baru dan Direkomendasikan)
+
+// 1. Ganti import lama dengan createBrowserRouter dan RouterProvider
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+
+// 2. Import komponen Layout dan semua halaman Anda tetap sama
 import Layout from './components/Layout';
-
-
-// Import all pages
 import Home from './feature/Home';
 import RegisterRole from './feature/auth/pages/RegisterRole';
 import RegisterUser from './feature/auth/pages/RegisterUser';
@@ -32,51 +34,57 @@ import PrivacyPolicy from './feature/PrivacyPolicy';
 import UserDashboard from './feature/user/dashboard/UserDashboard';
 import UserProfile from './feature/user/UserProfile';
 
+// 3. Definisikan semua rute Anda sebagai objek JavaScript di luar komponen App
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <Layout />, // Layout menjadi elemen root yang membungkus semua halaman
+    // errorElement: <ErrorPage />, // Opsional: Halaman error khusus untuk rute ini
+    children: [
+      // Semua rute halaman sekarang menjadi 'children' dari Layout
+      { index: true, element: <Home /> }, // 'index: true' menandakan ini halaman default untuk path '/'
+      
+      // Public Routes (tanpa slash di depan)
+      { path: 'register', element: <RegisterRole /> },
+      { path: 'register/user', element: <RegisterUser /> },
+      { path: 'register/vendor', element: <RegisterVendor /> },
+      { path: 'login', element: <Login /> },
+      { path: 'events', element: <Events /> },
+      { path: 'myevents', element: <MyEvent /> },
+      { path: 'events/:id', element: <EventDetail /> },
+      { path: 'whitelist/:eventId', element: <WhitelistRegistration /> },
+      { path: 'mint/:eventId', element: <MintPage /> },
+      { path: 'my-certificates', element: <MyCertificates /> },
+      { path: 'verify/:tokenId', element: <VerifyCertificate /> },
+      { path: 'about', element: <About /> },
+      { path: 'faq', element: <FAQ /> },
+      { path: 'help', element: <Help /> },
+      { path: 'terms', element: <TermsOfService /> },
+      { path: 'privacy', element: <PrivacyPolicy /> },
+
+      // Vendor Routes
+      { path: 'vendor/login', element: <VendorLogin /> },
+      { path: 'vendor/dashboard', element: <VendorDashboard /> },
+      { path: 'vendor/event/create', element: <CreateEvent /> },
+      { path: 'vendor/event/:id', element: <ManageEvent /> },
+      { path: 'vendor/event/:id/whitelist', element: <ViewWhitelist /> },
+      { path: 'vendor/event/:id/minted', element: <ViewMinted /> },
+      { path: 'vendor/profile', element: <VendorProfile /> },
+
+      // User Routes
+      { path: 'user/dashboard', element: <UserDashboard /> },
+      { path: 'profile', element: <UserProfile /> },
+
+      // Error Routes
+      { path: '500', element: <ServerError /> },
+      { path: '*', element: <NotFound /> }, // Rute 'catch-all' untuk halaman tidak ditemukan
+    ],
+  },
+]);
+
+// 4. Komponen App sekarang hanya perlu merender RouterProvider
 function App() {
-  return (
-    <Router>
-      <Layout>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Home />} />
-          <Route path="/register" element={<RegisterRole />} />
-          <Route path="/register/user" element={<RegisterUser />} />
-          <Route path="/register/vendor" element={<RegisterVendor />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/events" element={<Events />} />
-          <Route path="/myevents" element={<MyEvent />} />
-          <Route path="/events/:id" element={<EventDetail />} />
-          <Route path="/whitelist/:eventId" element={<WhitelistRegistration />} />
-          <Route path="/mint/:eventId" element={<MintPage />} />
-          <Route path="/my-certificates" element={<MyCertificates />} />
-          <Route path="/verify/:tokenId" element={<VerifyCertificate />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/faq" element={<FAQ />} />
-          <Route path="/help" element={<Help />} />
-          <Route path="/terms" element={<TermsOfService />} />
-          <Route path="/privacy" element={<PrivacyPolicy />} />
-
-          {/* Vendor Routes */}
-          <Route path="/vendor/login" element={<VendorLogin />} />
-          <Route path="/vendor/dashboard" element={<VendorDashboard />} />
-          <Route path="/vendor/event/create" element={<CreateEvent />} />
-          <Route path="/vendor/event/:id" element={<ManageEvent />} />
-          <Route path="/vendor/event/:id/whitelist" element={<ViewWhitelist />} />
-          <Route path="/vendor/event/:id/minted" element={<ViewMinted />} />
-          <Route path="/vendor/profile" element={<VendorProfile />} />
-
-          {/* User Routes */}
-          <Route path="/user/dashboard" element={<UserDashboard />} />
-          <Route path="/profile" element={<UserProfile />} />
-
-
-          {/* Error Routes */}
-          <Route path="/500" element={<ServerError />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Layout>
-    </Router>
-  );
+  return <RouterProvider router={router} />;
 }
 
 export default App;
