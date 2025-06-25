@@ -6,20 +6,6 @@ import WalletConnectPrompt from '../components/WalletConnectPrompt';
 import { useAuth } from '../../../auth/hooks/useAuth';
 import { Certificate, fetchCertificatesByWallet } from '../services/certificateService';
 
-// OPTIONAL: Card minimal untuk demo
-const CertificateCard = ({ certificate }: { certificate: Certificate }) => (
-  <div className="bg-white p-4 rounded-lg shadow">
-    <h3 className="text-lg font-semibold">{certificate.event_title}</h3>
-    <p className="text-sm text-gray-500">{certificate.event_description}</p>
-    <a
-      href="#"
-      className="text-blue-600 hover:underline mt-2 block"
-    >
-      View Details
-    </a>
-  </div>
-);
-
 export default function MyCertificatesPage() {
   const { isAuthenticated, walletAddress, login } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
@@ -36,7 +22,7 @@ export default function MyCertificatesPage() {
         setCertificates(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error('Failed to fetch certificates:', err);
-        setCertificates([]); // fallback
+        setCertificates([]);
       } finally {
         setLoading(false);
       }
@@ -50,38 +36,47 @@ export default function MyCertificatesPage() {
     c.event_description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // if (!isAuthenticated) {
-  //   return (
-  //     <WalletConnectPrompt
-  //       onConnect={() => {
-  //         // Simulasi: ganti dengan real wallet connect logic
-  //         const dummyToken = 'dummyToken';
-  //         const dummyAddress = '0x12d7A5E92D17dcb068e512660B24A9A3072a755e';
-  //         login(dummyToken, dummyAddress);
-  //       }}
-  //     />
-  //   );
-  // }
-
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <h1 className="text-4xl font-bold text-gray-900 mb-6">My Certificates</h1>
+    <div className="min-h-screen bg-gray-50 py-12 px-4 flex flex-col items-center justify-center">
+      <h1 className="text-4xl font-bold text-gray-900 mb-6 text-center">My Certificates</h1>
 
       <input
         type="text"
         placeholder="Search certificates..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full mb-6 p-3 border border-gray-300 rounded-lg"
+        className="w-full max-w-xl mb-6 p-3 border border-gray-300 rounded-lg shadow-sm"
       />
 
       {loading ? (
         <p>Loading certificates...</p>
       ) : filtered.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((cert) => (
-            <CertificateCard key={cert.id} certificate={cert} />
-          ))}
+        <div className="w-full max-w-3xl mx-auto overflow-x-auto">
+          <table className="min-w-full bg-white rounded-xl shadow-lg">
+            <thead>
+              <tr>
+                <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 border-b">Event</th>
+                <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 border-b">Description</th>
+                <th className="py-3 px-6 text-center text-sm font-semibold text-gray-700 border-b">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((cert) => (
+                <tr key={cert.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="py-4 px-6 font-medium text-gray-900">{cert.event_title}</td>
+                  <td className="py-4 px-6 text-gray-600">{cert.event_description}</td>
+                  <td className="py-4 px-6 text-center">
+                    <Link
+                      to={"#"}
+                      className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold shadow-sm transition-colors"
+                    >
+                      View Details
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       ) : (
         <div className="text-center py-12">
