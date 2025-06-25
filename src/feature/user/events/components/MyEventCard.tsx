@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 // ✅ Impor semua ikon yang dibutuhkan oleh KEDUA jenis badge
 import { 
-  Calendar, MapPin, Users, ArrowRight, Sparkles, XCircle, CheckCircle, 
+  Calendar, MapPin, ArrowRight, Sparkles, XCircle, CheckCircle, 
   Clock, Award, CheckSquare, XSquare 
 } from 'lucide-react';
 // ✅ Asumsikan path impor ini benar
@@ -48,7 +48,7 @@ const UserStatusBadge = ({ status }: { status: Event['user_status'] }) => {
     present: { text: 'Present', icon: <CheckSquare className="w-4 h-4" />, color: 'bg-green-100 text-green-800 border border-green-200' },
     registered: { text: 'Registered', icon: <Clock className="w-4 h-4" />, color: 'bg-blue-100 text-blue-800 border border-blue-200' },
     absent: { text: 'Absent', icon: <XSquare className="w-4 h-4" />, color: 'bg-red-100 text-red-800 border border-red-200' },
-    claimed: { text: 'Claimed', icon: <Award className="w-4 w-4" />, color: 'bg-purple-100 text-purple-800 border border-purple-200' },
+    claimed: { text: 'Claimed', icon: <Award className="w-4 h-4" />, color: 'bg-purple-100 text-purple-800 border border-purple-200' },
   };
 
   const currentStatus = statusInfo[status] || { text: status, icon: null, color: 'text-gray-700 bg-gray-100' };

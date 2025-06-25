@@ -1,7 +1,7 @@
 // src/hooks/useWhitelist.ts
 
 import { useState, useEffect, useCallback } from 'react';
-import { WhitelistEntry, ApiWhitelistEntry } from '../types';
+import { WhitelistEntry } from '../types';
 
 export function useWhitelist(eventId: string | undefined) {
   // Inisialisasi state dengan array kosong, ini sudah benar.

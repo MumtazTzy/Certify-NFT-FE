@@ -1,6 +1,6 @@
 // src/components/Layout.tsx (Versi Baru)
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 // 1. Impor Outlet dan ScrollRestoration
 import { Link, useLocation, Outlet, ScrollRestoration } from 'react-router-dom'; 
 import { Toaster } from 'react-hot-toast';

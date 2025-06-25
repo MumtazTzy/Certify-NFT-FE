@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Award, Users, BarChart3, Settings, TrendingUp, User } from 'lucide-react';
+import { Calendar, Award, Users, BarChart3, TrendingUp, User } from 'lucide-react';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { Event, fetchUserEvents } from '../events/services/MyeventServices';
 import { Certificate, fetchCertificatesByWallet } from '../certificates/services/certificateService';
