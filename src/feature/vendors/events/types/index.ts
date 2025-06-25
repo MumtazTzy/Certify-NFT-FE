@@ -12,7 +12,7 @@ export interface Event {
   start_date: string;
   end_date: string;
   location: string;
-  status: 'upcoming' | 'completed' | 'active' | 'minting' | 'closed'; // Status yang mungkin
+  status: 'upcoming' | 'ongoing' | 'ended' | 'cancelled' | 'minting';
   picture: string;
   maxattendees: number;
   attendees: number;

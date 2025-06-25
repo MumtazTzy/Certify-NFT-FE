@@ -99,8 +99,5 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         © 2025 Certify. All rights reserved.
       </footer>
     </div>
-    
   );
 }
-
-<Toaster position="top-center" />

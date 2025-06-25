@@ -1,67 +1,70 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Wallet, CheckCircle, User, Mail, Shield, AlertCircle } from 'lucide-react';
+import { CheckCircle, User, Mail, Shield, AlertCircle } from 'lucide-react';
 
-import { connectWallet, signMessage } from '../lib/wallet';
+// ✅ Hapus impor `connectWallet` dan `signMessage` karena tidak lagi dibutuhkan di sini.
+
+// ✅ Impor hook `useAuth` untuk mendapatkan data dari konteks global.
+import { useAuth } from '../hooks/useAuth';
 import { registerUser } from '../services/userServices';
 
 export default function RegisterUser() {
+  // ✅ Ambil data autentikasi dari konteks. Ini adalah satu-satunya sumber kebenaran.
+  const { walletAddress, isAuthenticated, login } = useAuth();
+  const navigate = useNavigate();
+
+  // State sekarang lebih sederhana, hanya untuk data form.
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
   });
   const [acceptTerms, setAcceptTerms] = useState(false);
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ fullName?: string; email?: string; general?: string }>({});
+  
+  // ❌ Hapus state dan fungsi yang tidak perlu:
+  // const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  // const [isConnected, setIsConnected] = useState(false);
+  // const handleWalletConnect = ... (fungsi ini dihapus seluruhnya)
 
-  const navigate = useNavigate();
-
-  const handleWalletConnect = async () => {
-    setErrors({});
-    setIsLoading(true);
-    try {
-      const { address } = await connectWallet();
-      const message = `Register at Certify\nTime: ${new Date().toLocaleString()}`;
-      await signMessage(message);
-      setWalletAddress(address);
-      setIsConnected(true);
-    } catch (err: any) {
-      if (err.code === 4001) {
-        setErrors({ general: 'You rejected the wallet request.' });
-      } else {
-        setErrors({ general: 'Failed to connect wallet.' });
-      }
-    } finally {
-      setIsLoading(false);
+  // ✅ Guard Clause: Melindungi halaman ini.
+  // Jika pengguna mencoba mengakses halaman ini tanpa login, mereka akan diarahkan kembali.
+  useEffect(() => {
+    if (!isAuthenticated || !walletAddress) {
+      navigate('/login');
     }
-  };
+  }, [isAuthenticated, walletAddress, navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    setErrors((prev) => ({ ...prev, [name]: '' }));
+    if (errors[name as keyof typeof errors]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
   };
 
   const validateForm = () => {
     const newErrors: typeof errors = {};
     if (!formData.fullName.trim()) newErrors.fullName = 'Full name is required';
-    if (!formData.email.trim()) newErrors.email = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Invalid email';
-
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Invalid email address format';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isConnected) {
-      setErrors({ general: 'Please connect your wallet first.' });
+    setErrors({});
+
+    if (!walletAddress) {
+      setErrors({ general: 'Wallet is not connected. Please go back to the login page.' });
       return;
     }
     if (!acceptTerms) {
-      setErrors({ general: 'Please accept the Terms and Privacy Policy.' });
+      setErrors({ general: 'You must accept the Terms of Service and Privacy Policy.' });
       return;
     }
     if (!validateForm()) return;
@@ -75,10 +78,16 @@ export default function RegisterUser() {
         acceptTerms,
       };
       const result = await registerUser(payload);
-      console.log('Registration success:', result);
-      navigate('/events'); // or wherever you want
+      console.log('Registration successful:', result);
+      
+      // ✅ Penting: Setelah registrasi berhasil, update role di AuthContext
+      // menjadi 'users' agar navigasi selanjutnya berjalan benar.
+      login(walletAddress!, 'users');
+
+      // Arahkan ke dashboard pengguna
+      navigate('/user/dashboard'); 
     } catch (err: any) {
-      setErrors({ general: err.message || 'Registration failed' });
+      setErrors({ general: err.message || 'Registration failed. The email or wallet may already be in use.' });
     } finally {
       setIsLoading(false);
     }
@@ -86,58 +95,48 @@ export default function RegisterUser() {
 
   const formatAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
 
+  // Mencegah "flash" dari form sebelum guard clause berjalan
+  if (!walletAddress) {
+    return null; // Atau tampilkan komponen loading
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-      <div className="max-w-md mx-auto">
+      <div className="max-w-md mx-auto w-full">
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
             <div className="bg-blue-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
               <Shield className="h-8 w-8 text-blue-600" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Register Account</h1>
-            <p className="text-gray-600">Connect your wallet & fill in your details</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Complete Your Profile</h1>
+            <p className="text-gray-600">Your wallet is connected. Just fill in your details.</p>
           </div>
 
-          {/* Error Message */}
           {errors.general && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-              <div className="flex items-center space-x-3">
-                <AlertCircle className="h-5 w-5 text-red-600" />
-                <p className="text-red-800 text-sm">{errors.general}</p>
-              </div>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 flex items-center space-x-3">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+              <p className="text-red-800 text-sm">{errors.general}</p>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Wallet Connection */}
+            {/* ✅ Bagian Wallet (Sekarang Jauh Lebih Sederhana dan tidak butuh tombol) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Connect Your Wallet
+                Your Wallet Address
               </label>
-              {!isConnected ? (
-                <button
-                  type="button"
-                  onClick={handleWalletConnect}
-                  disabled={isLoading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 px-4 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 transform hover:scale-105 disabled:transform-none"
-                >
-                  <Wallet className="h-5 w-5" />
-                  <span>{isLoading ? 'Connecting...' : 'Connect MetaMask'}</span>
-                </button>
-              ) : (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    <div>
-                      <p className="text-green-800 font-medium">Wallet Connected</p>
-                      <p className="text-green-600 text-sm">{formatAddress(walletAddress!)}</p>
-                    </div>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <div>
+                    <p className="text-green-800 font-medium">Wallet Connected</p>
+                    <p className="text-green-600 text-sm font-mono">{formatAddress(walletAddress)}</p>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
 
-            {/* Full Name */}
+            {/* Input Nama Lengkap */}
             <div>
               <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
                 Full Name <span className="text-red-500">*</span>
@@ -154,6 +153,7 @@ export default function RegisterUser() {
                     errors.fullName ? 'border-red-500' : 'border-gray-300'
                   } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
                   placeholder="Your full name"
+                  disabled={isLoading}
                 />
               </div>
               {errors.fullName && (
@@ -161,7 +161,7 @@ export default function RegisterUser() {
               )}
             </div>
 
-            {/* Email */}
+            {/* Input Email */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address <span className="text-red-500">*</span>
@@ -178,6 +178,7 @@ export default function RegisterUser() {
                     errors.email ? 'border-red-500' : 'border-gray-300'
                   } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
                   placeholder="mail@example.com"
+                  disabled={isLoading}
                 />
               </div>
               {errors.email && (
@@ -185,7 +186,7 @@ export default function RegisterUser() {
               )}
             </div>
 
-            {/* Terms */}
+            {/* Checkbox Syarat & Ketentuan */}
             <div className="flex items-start space-x-3">
               <input
                 type="checkbox"
@@ -193,24 +194,25 @@ export default function RegisterUser() {
                 checked={acceptTerms}
                 onChange={(e) => setAcceptTerms(e.target.checked)}
                 className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                disabled={isLoading}
               />
               <label htmlFor="terms" className="text-sm text-gray-700">
                 I accept the{' '}
-                <a href="/terms" className="text-blue-600 hover:text-blue-700 underline">
+                <a href="/terms" className="text-blue-600 hover:text-blue-700 underline" target="_blank" rel="noopener noreferrer">
                   Terms of Service
                 </a>{' '}
                 and{' '}
-                <a href="/privacy" className="text-blue-600 hover:text-blue-700 underline">
+                <a href="/privacy" className="text-blue-600 hover:text-blue-700 underline" target="_blank" rel="noopener noreferrer">
                   Privacy Policy
                 </a>.
               </label>
             </div>
 
-            {/* Submit */}
+            {/* Tombol Submit */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3 px-4 rounded-lg font-semibold transition-all transform hover:scale-105 disabled:transform-none"
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-3 px-4 rounded-lg font-semibold transition-all transform hover:scale-105 disabled:transform-none"
             >
               {isLoading ? 'Registering...' : 'Complete Registration'}
             </button>
