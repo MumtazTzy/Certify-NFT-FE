@@ -1,10 +1,33 @@
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, Users, ArrowRight, Sparkles, XCircle, CheckCircle } from 'lucide-react';
+import { 
+  Calendar, MapPin, Users, ArrowRight, Sparkles, XCircle, CheckCircle, CheckSquare, XSquare,
+  Clock, Award
+} from 'lucide-react';
 import { Event } from '../services/MyeventServices';
 
 interface EventCardProps {
   event: Event;
 }
+
+const UserStatusBadge = ({ status }: { status: Event['user_status'] }) => {
+  if (!status) return null;
+
+  const statusInfo = {
+    present: { text: 'You were present', icon: <CheckSquare className="w-4 h-4" />, color: 'text-green-800 bg-green-100 border border-green-200' },
+    registered: { text: 'Registered', icon: <Clock className="w-4 h-4" />, color: 'text-blue-800 bg-blue-100 border border-blue-200' },
+    absent: { text: 'You were absent', icon: <XSquare className="w-4 h-4" />, color: 'text-red-800 bg-red-100 border border-red-200' },
+    claimed: { text: 'Certificate Claimed', icon: <Award className="w-4 h-4" />, color: 'text-purple-800 bg-purple-100 border border-purple-200' },
+  };
+
+  const currentStatus = statusInfo[status] || { text: status, icon: null, color: 'text-gray-700 bg-gray-100' };
+
+  return (
+    <div className={`inline-flex items-center gap-2 px-2.5 py-1 mb-3 rounded-full text-xs font-semibold ${currentStatus.color}`}>
+      {currentStatus.icon}
+      <span>{currentStatus.text}</span>
+    </div>
+  );
+};
 
 export default function EventCard({ event }: EventCardProps) {
   // Fungsi helper tidak berubah, sudah baik.
@@ -39,11 +62,9 @@ export default function EventCard({ event }: EventCardProps) {
   const attendeesPercentage = typeof event.attendees === "number" && event.maxattendees > 0
     ? Math.min((event.attendees / event.maxattendees) * 100, 100)
     : 0;
-
   return (
-    // ✅ UI/UX IMPROVEMENT: Menggunakan `rounded-b-2xl` agar bisa menyatu dengan badge status di atasnya.
-    <div className="bg-white rounded-b-2xl shadow-lg hover:shadow-2xl transition-all duration-300 group flex flex-col h-full">
-      {/* Gambar dengan rasio aspek yang konsisten */}
+    // ✅ UI/UX: Seluruh kartu sekarang menjadi satu unit yang kohesif
+    <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 group flex flex-col h-full">
       <div className="relative aspect-video overflow-hidden">
         <img src={imageUrl} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
         <div className="absolute top-3 left-3 bg-white/70 backdrop-blur-sm p-1 rounded-full">
@@ -56,15 +77,17 @@ export default function EventCard({ event }: EventCardProps) {
 
       <div className="flex flex-col flex-1 p-6">
         <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-purple-600 transition-colors line-clamp-2">{event.title}</h3>
+        
+        {/* ✅ UI/UX: Menampilkan UserStatusBadge di sini, di bawah judul */}
+        <UserStatusBadge status={event.user_status} />
+        
         <p className="text-gray-600 mb-4 text-sm leading-relaxed line-clamp-3 flex-grow">{event.description}</p>
         
-        {/* Detail Event yang lebih rapi */}
         <div className="space-y-3 mb-4 text-sm text-gray-700 border-t pt-4">
           <div className="flex items-center"><Calendar className="h-4 w-4 mr-3 text-gray-500 flex-shrink-0" /><span>{new Date(event.start_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</span></div>
           <div className="flex items-center"><MapPin className="h-4 w-4 mr-3 text-gray-500 flex-shrink-0" /><span className="truncate">{event.location}</span></div>
         </div>
 
-        {/* Progress bar peserta yang lebih informatif */}
         <div className="space-y-2 mb-5">
             <div className="flex justify-between text-sm font-medium text-gray-600">
                 <span>Attendees</span>
@@ -75,7 +98,6 @@ export default function EventCard({ event }: EventCardProps) {
             </div>
         </div>
         
-        {/* Tombol Aksi */}
         <div className="mt-auto">
           <Link to={`/events/${event.id}`} className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 group-hover:gap-3">
             <span>View Details</span>

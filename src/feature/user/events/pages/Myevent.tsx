@@ -1,29 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Search, CheckSquare, Clock, XSquare, Award, Frown } from 'lucide-react';
+// ✅ FIX: Impor ikon disederhanakan, hanya yang dibutuhkan oleh halaman ini.
+import { Calendar, Search, Frown } from 'lucide-react'; 
+
+// ✅ FIX: Path impor disesuaikan untuk konsistensi
 import { useAuth } from '../../../auth/hooks/useAuth';
-import { fetchUserEvents, Event } from '../services/MyeventServices';
-import EventCard from '../components/MyEventCard';
+import { fetchUserEvents,Event } from '../services/MyeventServices';
+import EventCard from '../components/MyEventCard'; // ✅ Menggunakan EventCard yang sudah pintar
 
-// Komponen helper untuk UserStatusBadge
-const UserStatusBadge = ({ status }: { status: Event['user_status'] }) => {
-  if (!status) return null;
-  const statusInfo = {
-    present: { text: 'You were present', icon: <CheckSquare className="w-4 h-4" />, color: 'text-green-800 bg-green-100 border border-green-200' },
-    registered: { text: 'Registered', icon: <Clock className="w-4 h-4" />, color: 'text-blue-800 bg-blue-100 border border-blue-200' },
-    absent: { text: 'You were absent', icon: <XSquare className="w-4 h-4" />, color: 'text-red-800 bg-red-100 border border-red-200' },
-    claimed: { text: 'Certificate Claimed', icon: <Award className="w-4 h-4" />, color: 'text-purple-800 bg-purple-100 border border-purple-200' },
-  };
-  const currentStatus = statusInfo[status] || { text: status, icon: null, color: 'text-gray-700 bg-gray-100' };
-  return (
-    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-t-lg text-sm font-semibold ${currentStatus.color}`}>
-      {currentStatus.icon}
-      <span>{currentStatus.text}</span>
-    </div>
-  );
-};
-
-// Komponen helper lainnya
+// Komponen helper (tidak ada UserStatusBadge lagi di sini)
 const LoadingSkeleton = () => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
     {[...Array(3)].map((_, i) => (
@@ -59,11 +44,9 @@ export default function MyEventsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
+  // useEffect (tidak ada perubahan, sudah baik)
   useEffect(() => {
-    if (!isAuthenticated || !walletAddress) {
-      setLoading(false);
-      return;
-    }
+    if (!isAuthenticated || !walletAddress) { setLoading(false); return; }
     const loadMyEvents = async () => {
       setLoading(true);
       try {
@@ -93,14 +76,10 @@ export default function MyEventsPage() {
         {loading ? (
           <LoadingSkeleton />
         ) : filteredEvents.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-12 gap-x-8">
+          // ✅ FIX: Logika mapping sekarang SANGAT sederhana
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredEvents.map((event) => (
-              <div key={event.id} className="flex flex-col">
-                <UserStatusBadge status={event.user_status} />
-                <div className="flex-grow rounded-b-2xl overflow-hidden">
-                  <EventCard event={event} />
-                </div>
-              </div>
+              <EventCard key={event.id} event={event} />
             ))}
           </div>
         ) : (
