@@ -26,7 +26,7 @@ const getEventData = async (eventId: string): Promise<Event> => {
  */
 const cancelEvent = async (eventId: string): Promise<{ message: string }> => {
     const response = await fetch(`${API_BASE_URL}/api/events/cancel/${eventId}`, {
-        method: 'PUT', // Atau 'POST', sesuai spesifikasi backend
+        method: 'POST', // Atau 'POST', sesuai spesifikasi backend
     });
     const result = await response.json();
     if (!response.ok) {
