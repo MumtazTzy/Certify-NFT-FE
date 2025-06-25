@@ -38,7 +38,7 @@ export interface Event {
   end_date: string;
   created_at: string;
   updated_at: string;
-  status: 'upcoming' | 'ongoing' | 'ended' | 'cancelled' | 'minting';
+  status: 'upcoming' | 'ongoing' | 'ended' | 'canceled' | 'minting';
 
   // --- Numeric Data & Stats ---
   // ✅ Menggunakan snake_case agar konsisten

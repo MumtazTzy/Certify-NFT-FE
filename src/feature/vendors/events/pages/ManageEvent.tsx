@@ -76,11 +76,11 @@ export default function ManageEvent() {
         const promise = cancelEvent(id);
 
         toast.promise(promise, {
-            loading: 'Cancelling event...',
+            loading: 'canceling event...',
             success: (data) => {
-                // Setelah berhasil, muat ulang data event untuk menampilkan status 'Cancelled'
+                // Setelah berhasil, muat ulang data event untuk menampilkan status 'canceled'
                 loadEvent();
-                return data.message || "Event successfully cancelled.";
+                return data.message || "Event successfully canceled.";
             },
             error: (err) => err.message
         });
@@ -105,7 +105,7 @@ export default function ManageEvent() {
 
     const registrationRate = event.max_attendees > 0 ? Math.round((event.attendees / event.max_attendees) * 100) : 0;
     const spotsRemaining = event.max_attendees - event.attendees;
-    const isEventCancelled = event.status === 'cancelled';
+    const isEventcanceled = event.status === 'canceled';
 
     return (
         <>
@@ -117,15 +117,15 @@ export default function ManageEvent() {
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                             <div><h1 className="text-3xl font-bold text-gray-900">Manage Event</h1><p className="text-gray-600 mt-1">{event.title}</p></div>
                             <div className="mt-4 md:mt-0 flex items-center space-x-3">
-                                <button className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold disabled:bg-blue-300" disabled={isEventCancelled}><Edit className="h-4 w-4" /><span>Edit</span></button>
+                                <button className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold disabled:bg-blue-300" disabled={isEventcanceled}><Edit className="h-4 w-4" /><span>Edit</span></button>
                                 {/* Tombol diubah menjadi "Cancel" dan dinonaktifkan jika event sudah dibatalkan */}
-                                <button onClick={() => setIsModalOpen(true)} className="inline-flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold disabled:bg-red-300" disabled={isEventCancelled}><XCircle className="h-4 w-4" /><span>Cancel Event</span></button>
+                                <button onClick={() => setIsModalOpen(true)} className="inline-flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold disabled:bg-red-300" disabled={isEventcanceled}><XCircle className="h-4 w-4" /><span>Cancel Event</span></button>
                             </div>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* ... (Konten lainnya tetap sama, tetapi sekarang akan menampilkan data event yang mungkin sudah 'cancelled') ... */}
+                        {/* ... (Konten lainnya tetap sama, tetapi sekarang akan menampilkan data event yang mungkin sudah 'canceled') ... */}
                         <div className="lg:col-span-2 space-y-6">
                             <div className="bg-white rounded-2xl shadow-lg p-6">
                                 <h2 className="text-xl font-bold text-gray-900 mb-4">Event Details</h2>
@@ -150,12 +150,12 @@ export default function ManageEvent() {
                                     <div>
                                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
                                             event.status === 'upcoming' ? 'bg-blue-100 text-blue-800' : 
-                                            event.status === 'cancelled' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+                                            event.status === 'canceled' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
                                         }`}>
                                             {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
                                         </span>
                                     </div>
-                                    <div><p className="text-sm font-medium text-gray-700 mb-2">Certificate Minting</p><div className="flex items-center justify-between"><span className={`text-sm ${event.minting_active ? 'text-green-600' : 'text-gray-600'}`}>{event.minting_active ? 'Active' : 'Inactive'}</span><button onClick={handleActivateMinting} className={`inline-flex items-center space-x-1 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${event.minting_active ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`} disabled={isEventCancelled}>{event.minting_active ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}<span>{event.minting_active ? 'Deactivate' : 'Activate'}</span></button></div></div>
+                                    <div><p className="text-sm font-medium text-gray-700 mb-2">Certificate Minting</p><div className="flex items-center justify-between"><span className={`text-sm ${event.minting_active ? 'text-green-600' : 'text-gray-600'}`}>{event.minting_active ? 'Active' : 'Inactive'}</span><button onClick={handleActivateMinting} className={`inline-flex items-center space-x-1 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${event.minting_active ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`} disabled={isEventcanceled}>{event.minting_active ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}<span>{event.minting_active ? 'Deactivate' : 'Activate'}</span></button></div></div>
                                 </div>
                             </div>
                             <div className="bg-white rounded-2xl shadow-lg p-6">
@@ -176,7 +176,7 @@ export default function ManageEvent() {
                 onClose={() => setIsModalOpen(false)}
                 onConfirm={handleConfirmCancel}
                 title="Cancel Event"
-                message={`Are you sure you want to cancel "${event.title}"? This action will mark the event as cancelled, but the data will be preserved. Attendees will be notified.`}
+                message={`Are you sure you want to cancel "${event.title}"? This action will mark the event as canceled, but the data will be preserved. Attendees will be notified.`}
             />
         </>
     );

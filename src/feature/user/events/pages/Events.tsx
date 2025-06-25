@@ -6,7 +6,7 @@ import EventCard from '../components/EventCard';
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'upcoming' | 'ongoing' | 'ended' | 'cancelled' | 'minting'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'upcoming' | 'ongoing' | 'ended' | 'canceled' | 'minting'>('all');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 

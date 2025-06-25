@@ -39,7 +39,7 @@ interface StatusCardProps {
 
 const StatusCard: React.FC<StatusCardProps> = ({ event, isWhitelisted, onCancel }) => {
     const { isTimeUp, ...timeLeft } = useCountdown(event.start_date);
-    const isUpcoming = !isTimeUp && event.status !== 'completed';
+    const isUpcoming = !isTimeUp && event.status !== 'ended';
 
     if (isUpcoming) {
         return (

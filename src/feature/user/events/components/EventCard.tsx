@@ -8,7 +8,7 @@ interface Props {
 
 export default function EventCard({ event }: Props) {
   // 1. Variabel boolean untuk kemudahan pengecekan
-  const isCancelled = event.status === 'canceled';
+  const isCanceled = event.status === 'canceled';
 
   const getStatusColor = (status: Event['status']) => {
     switch (status) {
@@ -38,7 +38,7 @@ export default function EventCard({ event }: Props) {
   };
   
   // Variabel untuk menonaktifkan tombol/link
-  const isLinkDisabled = !event.id || isCancelled;
+  const isLinkDisabled = !event.id || isCanceled;
 
   return (
     // 2. Kontainer utama dimodifikasi
@@ -47,7 +47,7 @@ export default function EventCard({ event }: Props) {
     <div
       className={`
         bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 flex flex-col h-full
-        ${isCancelled
+        ${isCanceled
           ? 'opacity-60 cursor-not-allowed select-none'
           : 'group hover:shadow-xl'
         }
@@ -75,7 +75,7 @@ export default function EventCard({ event }: Props) {
       </div>
 
       <div className="flex flex-col flex-1 p-4 md:p-6">
-        <h3 className={`text-lg md:text-xl font-bold text-gray-900 mb-1 md:mb-2 line-clamp-2 transition-colors ${!isCancelled && 'group-hover:text-blue-600'}`}>
+        <h3 className={`text-lg md:text-xl font-bold text-gray-900 mb-1 md:mb-2 line-clamp-2 transition-colors ${!isCanceled && 'group-hover:text-blue-600'}`}>
           {event.title || <span className="inline-block bg-gray-200 rounded w-1/2 h-5"></span>}
         </h3>
         <p className="text-gray-600 mb-1 text-sm min-h-[1.5rem]">
@@ -117,10 +117,10 @@ export default function EventCard({ event }: Props) {
           <div className="bg-gray-200 rounded-full h-2">
             <div
               // 4. Progress bar menjadi abu-abu jika dibatalkan
-              className={`h-2 rounded-full transition-all duration-300 ${isCancelled ? 'bg-gray-400' : 'bg-blue-600'}`}
+              className={`h-2 rounded-full transition-all duration-300 ${isCanceled ? 'bg-gray-400' : 'bg-blue-600'}`}
               style={{
                 width:
-                  isCancelled
+                  isCanceled
                     ? "100%" // Tampilkan bar penuh dengan warna abu-abu
                     : typeof event.whitelisted === "number" && typeof event.maxAttendees === "number" && event.maxAttendees > 0
                     ? `${Math.min((event.whitelisted / event.maxAttendees) * 100, 100)}%`
@@ -148,8 +148,8 @@ export default function EventCard({ event }: Props) {
             onClick={(e) => isLinkDisabled && e.preventDefault()}
           >
             {/* Teks tombol berubah jika dibatalkan */}
-            <span>{isCancelled ? 'Event Cancelled' : 'View Details'}</span>
-            {!isCancelled && <ArrowRight className="h-5 w-5" />}
+            <span>{isCanceled ? 'Event Canceled' : 'View Details'}</span>
+            {!isCanceled && <ArrowRight className="h-5 w-5" />}
           </Link>
         </div>
       </div>
