@@ -1,5 +1,4 @@
-// src/pages/vendor/events/ManageEvent.tsx
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, MapPin, Users, Award, Settings, Edit, Play, Pause, Loader2, AlertCircle, XCircle } from 'lucide-react'; // Import XCircle untuk cancel
 import toast from 'react-hot-toast';
@@ -104,8 +103,8 @@ export default function ManageEvent() {
     
     if (!event) return null;
 
-    const registrationRate = event.maxattendees > 0 ? Math.round((event.attendees / event.maxattendees) * 100) : 0;
-    const spotsRemaining = event.maxattendees - event.attendees;
+    const registrationRate = event.max_attendees > 0 ? Math.round((event.attendees / event.max_attendees) * 100) : 0;
+    const spotsRemaining = event.max_attendees - event.attendees;
     const isEventCancelled = event.status === 'cancelled';
 
     return (
@@ -133,8 +132,8 @@ export default function ManageEvent() {
                                 <div className="space-y-4">
                                     <div className="flex items-center space-x-3"><Calendar className="h-5 w-5 text-gray-400" /><div><p className="font-semibold text-gray-900">Date</p><p className="text-gray-600">{new Date(event.start_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p></div></div>
                                     <div className="flex items-center space-x-3"><MapPin className="h-5 w-5 text-gray-400" /><div><p className="font-semibold text-gray-900">Location</p><p className="text-gray-600">{event.location}</p></div></div>
-                                    <div className="flex items-center space-x-3"><Users className="h-5 w-5 text-gray-400" /><div><p className="font-semibold text-gray-900">Attendees</p><p className="text-gray-600">{event.attendees}/{event.maxattendees} registered</p></div></div>
-                                    <div className="flex items-center space-x-3"><Award className="h-5 w-5 text-gray-400" /><div><p className="font-semibold text-gray-900">Certificates</p><p className="text-gray-600">{event.certificatesMinted ?? 0} minted</p></div></div>
+                                    <div className="flex items-center space-x-3"><Users className="h-5 w-5 text-gray-400" /><div><p className="font-semibold text-gray-900">Attendees</p><p className="text-gray-600">{event.attendees}/{event.max_attendees} registered</p></div></div>
+                                    <div className="flex items-center space-x-3"><Award className="h-5 w-5 text-gray-400" /><div><p className="font-semibold text-gray-900">Certificates</p><p className="text-gray-600">{event.certificates_minted ?? 0} minted</p></div></div>
                                 </div>
                                 <div className="border-t border-gray-200 pt-4 mt-6"><h3 className="font-semibold text-gray-900 mb-2">Description</h3><p className="text-gray-700 leading-relaxed">{event.description}</p></div>
                             </div>
@@ -156,7 +155,7 @@ export default function ManageEvent() {
                                             {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
                                         </span>
                                     </div>
-                                    <div><p className="text-sm font-medium text-gray-700 mb-2">Certificate Minting</p><div className="flex items-center justify-between"><span className={`text-sm ${event.mintingActive ? 'text-green-600' : 'text-gray-600'}`}>{event.mintingActive ? 'Active' : 'Inactive'}</span><button onClick={handleActivateMinting} className={`inline-flex items-center space-x-1 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${event.mintingActive ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`} disabled={isEventCancelled}>{event.mintingActive ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}<span>{event.mintingActive ? 'Deactivate' : 'Activate'}</span></button></div></div>
+                                    <div><p className="text-sm font-medium text-gray-700 mb-2">Certificate Minting</p><div className="flex items-center justify-between"><span className={`text-sm ${event.minting_active ? 'text-green-600' : 'text-gray-600'}`}>{event.minting_active ? 'Active' : 'Inactive'}</span><button onClick={handleActivateMinting} className={`inline-flex items-center space-x-1 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${event.minting_active ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`} disabled={isEventCancelled}>{event.minting_active ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}<span>{event.minting_active ? 'Deactivate' : 'Activate'}</span></button></div></div>
                                 </div>
                             </div>
                             <div className="bg-white rounded-2xl shadow-lg p-6">
