@@ -51,3 +51,25 @@ export interface Event {
   // --- Flags ---
   minting_active?: boolean; // ✅ Diubah menjadi snake_case dan tetap opsional
 }
+
+// src/types/index.ts
+
+export interface WhitelistEntry {
+  id: string;
+  name: string;
+  email: string;
+  walletAddress: string;
+  registrationDate: string;
+  status: 'active' | 'revoked';
+}
+
+// Tipe data mentah dari API
+export interface ApiWhitelistEntry {
+  id: number;
+  user_id: number;
+  name: string;
+  email: string;
+  wallet_address: string;
+  status: string; // misal: "approved"
+  created_at: string;
+}
