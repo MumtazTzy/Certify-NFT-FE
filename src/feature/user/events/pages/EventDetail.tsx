@@ -24,7 +24,7 @@ const getWhitelistStorageKey = (walletAddress: string, eventId: string) => {
 
 const EventDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { isAuthenticated, walletAddress } = useAuth(); // <-- GUNAKAN AUTH CONTEXT
+  const { isAuthenticated, walletAddress, user } = useAuth(); // <-- GUNAKAN AUTH CONTEXT
 
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -156,6 +156,7 @@ const EventDetail: React.FC = () => {
                 isWhitelisted={isWhitelisted} 
                 onCancel={() => setIsModalOpen(true)} // Buka modal saat diklik
                 isCancelling={isCancelling} // Beri tahu StatusCard saat sedang loading
+                userRole={user?.role} // <-- tambahkan prop role
               />
               <EventStatsCard whitelisted={event.whitelisted} maxAttendees={event.maxattendees} />
               <ShareCard />

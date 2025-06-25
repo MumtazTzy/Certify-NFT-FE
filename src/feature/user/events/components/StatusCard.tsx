@@ -34,12 +34,67 @@ interface StatusCardProps {
     isWhitelisted: boolean;
     onCancel: () => void; // Callback untuk handle pembatalan
     isCancelling: boolean; // Status pembatalan.
-    
+    userRole?: string | null; // <-- Tambahkan prop role
 }
 
-const StatusCard: React.FC<StatusCardProps> = ({ event, isWhitelisted, onCancel }) => {
+const StatusCard: React.FC<StatusCardProps> = ({ event, isWhitelisted, onCancel, userRole }) => {
     const { isTimeUp, ...timeLeft } = useCountdown(event.start_date);
     const isUpcoming = !isTimeUp && event.status !== 'ended';
+
+    // Helper untuk render tombol aksi
+    const renderAction = () => {
+        if (userRole === 'vendors') {
+            return (
+                <div className="w-full bg-yellow-100 text-yellow-800 py-3 px-4 rounded-lg font-semibold text-center mt-2">
+                    You are a vendor and cannot participate any event.
+                </div>
+            );
+        }
+        if (isUpcoming) {
+            return isWhitelisted ? (
+                <div className="text-center space-y-3">
+                    <div className="bg-green-100 text-green-800 py-3 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2">
+                        <CheckCircle className="h-5 w-5" />
+                        <span>You're on the Whitelist!</span>
+                    </div>
+                    <button
+                        onClick={onCancel}
+                        className="w-full inline-flex items-center justify-center space-x-2 bg-red-100 hover:bg-red-200 text-red-700 py-2 px-4 rounded-lg font-semibold transition-colors text-sm"
+                    >
+                        <XCircle className="h-4 w-4" />
+                        <span>Leave Whitelist</span>
+                    </button>
+                </div>
+            ) : (
+                <Link
+                    to={`/whitelist/${event.id}`}
+                    className="w-full inline-block bg-blue-600 hover:bg-blue-700 text-white py-4 px-4 rounded-lg font-semibold text-center transition-all transform hover:scale-105"
+                >
+                    Join Whitelist
+                </Link>
+            );
+        }
+        // Event sudah selesai
+        if (event.status === 'ended') {
+            return (
+                <>
+                    <Link
+                        to={`/mint/${event.id}`}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-semibold text-center block transition-all"
+                    >
+                        Mint Certificate
+                    </Link>
+                    <button
+                        disabled
+                        className="w-full bg-gray-300 text-gray-500 py-3 px-4 rounded-lg font-semibold cursor-not-allowed mt-2"
+                    >
+                        Event Closed
+                    </button>
+                </>
+            );
+        }
+        return null;
+    };
 
     if (isUpcoming) {
         return (
@@ -48,34 +103,8 @@ const StatusCard: React.FC<StatusCardProps> = ({ event, isWhitelisted, onCancel 
                     <Clock className="h-5 w-5 mr-2" />
                     Event Starts In
                 </h3>
-                
-                {/* Countdown Timer diaktifkan kembali */}
                 <CountdownTimer timeLeft={timeLeft} />
-
-                {isWhitelisted ? (
-                    // Tampilan jika pengguna SUDAH terdaftar
-                    <div className="text-center space-y-3">
-                        <div className="bg-green-100 text-green-800 py-3 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2">
-                            <CheckCircle className="h-5 w-5" />
-                            <span>You're on the Whitelist!</span>
-                        </div>
-                        <button
-                            onClick={onCancel}
-                            className="w-full inline-flex items-center justify-center space-x-2 bg-red-100 hover:bg-red-200 text-red-700 py-2 px-4 rounded-lg font-semibold transition-colors text-sm"
-                        >
-                            <XCircle className="h-4 w-4" />
-                            <span>Leave Whitelist</span>
-                        </button>
-                    </div>
-                ) : (
-                    // Tampilan default jika BELUM terdaftar
-                    <Link
-                        to={`/whitelist/${event.id}`}
-                        className="w-full inline-block bg-blue-600 hover:bg-blue-700 text-white py-4 px-4 rounded-lg font-semibold text-center transition-all transform hover:scale-105"
-                    >
-                        Join Whitelist
-                    </Link>
-                )}
+                {renderAction()}
             </div>
         );
     }
@@ -89,23 +118,7 @@ const StatusCard: React.FC<StatusCardProps> = ({ event, isWhitelisted, onCancel 
             <p className="text-gray-700 mb-4 text-center">
                 This event has already ended.
             </p>
-            {/* Tampilkan tombol mint certificate jika event ended */}
-            {event.status === 'ended' && (
-                <div className="mt-4 w-full">
-                    <Link
-                        to={`/mint/${event.id}`}
-                        className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-semibold text-center block transition-all"
-                    >
-                        Mint Certificate
-                    </Link>
-                </div>
-            )}
-            <button
-                disabled
-                className="w-full bg-gray-300 text-gray-500 py-3 px-4 rounded-lg font-semibold cursor-not-allowed mt-2"
-            >
-                Event Closed
-            </button>
+            {renderAction()}
         </div>
     );
 };
