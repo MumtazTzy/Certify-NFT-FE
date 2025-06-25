@@ -12,7 +12,7 @@ export interface Event {
   vendor_id: number;
   start_date: string;
   end_date: string;
-  status: 'upcoming' | 'ongoing' | 'ended' | 'cancelled' | 'minting';
+  status: 'upcoming' | 'ongoing' | 'ended' | 'canceled' | 'minting';
   created_at: string;
   updated_at: string;
   picture: string;

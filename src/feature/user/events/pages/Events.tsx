@@ -70,7 +70,7 @@ export default function EventsPage() {
                 <option value="ongoing">Ongoing</option>
                 <option value="minting">Minting</option>
                 <option value="ended">Ended</option>
-                <option value="Cancelled">Cancelled</option>
+                <option value="Canceled">Canceled</option>
               </select>
             </div>
           </div>

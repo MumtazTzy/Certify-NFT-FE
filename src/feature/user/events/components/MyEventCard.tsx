@@ -22,7 +22,7 @@ const EventStatusBadge = ({ status }: { status: Event['status'] }) => {
       case 'upcoming': return { color: 'bg-blue-100 text-blue-800 border-blue-200', icon: <Calendar className="h-4 w-4" /> };
       case 'ongoing': return { color: 'bg-green-100 text-green-800 border-green-200', icon: <span className="relative flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span></span> };
       case 'minting': return { color: 'bg-purple-100 text-purple-800 border-purple-200', icon: <Sparkles className="h-4 w-4" /> };
-      case 'cancelled': return { color: 'bg-red-100 text-red-800 border-red-200', icon: <XCircle className="h-4 w-4" /> };
+      case 'canceled': return { color: 'bg-red-100 text-red-800 border-red-200', icon: <XCircle className="h-4 w-4" /> };
       case 'ended': return { color: 'bg-gray-200 text-gray-700 border-gray-300', icon: <CheckCircle className="h-4 w-4" /> };
       default: return { color: 'bg-gray-200 text-gray-700 border-gray-300', icon: <div className="h-4 w-4 bg-gray-400 rounded-full"></div> };
     }

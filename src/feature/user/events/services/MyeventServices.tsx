@@ -14,7 +14,7 @@ export interface Event {
   description: string;
   location: string;
   picture: string;
-  status: 'upcoming' | 'ongoing' | 'ended' | 'cancelled' | 'minting';
+  status: 'upcoming' | 'ongoing' | 'ended' | 'canceled' | 'minting';
   
   // --- Properti yang hilang sekarang ditambahkan ---
   vendor_id: number;          // ✅ DITAMBAHKAN
