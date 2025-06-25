@@ -110,15 +110,6 @@ export default function UserDashboard() {
               <h1 className="text-3xl font-bold text-gray-900">User Dashboard</h1>
               <p className="text-gray-600 mt-1">Welcome! Here is your activity summary and quick access to your features.</p>
             </div>
-            <div className="mt-4 md:mt-0">
-              <Link
-                to="/profile"
-                className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all transform hover:scale-105"
-              >
-                <Settings className="h-5 w-5" />
-                <span>Manage Profile</span>
-              </Link>
-            </div>
           </div>
         </div>
 
@@ -226,11 +217,11 @@ export default function UserDashboard() {
           >
             <div className="flex items-center space-x-4">
               <div className="bg-blue-50 group-hover:bg-blue-100 w-12 h-12 rounded-lg flex items-center justify-center transition-colors">
-                <Settings className="h-6 w-6 text-blue-600" />
+                <User className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Manage Profile</h3>
-                <p className="text-sm text-gray-600">Update your personal information</p>
+                <h3 className="font-semibold text-gray-900">My Profile</h3>
+                <p className="text-sm text-gray-600">View and update your profile information</p>
               </div>
             </div>
           </Link>
