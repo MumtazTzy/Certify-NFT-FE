@@ -1,5 +1,4 @@
 import React from 'react';
-import { API_IMAGE_URL } from '../services/EventdetailServices';
 
 interface EventHeroProps {
 id: number;
@@ -9,7 +8,7 @@ id: number;
 }
 
 const EventHero: React.FC<EventHeroProps> = ({ title, organizer, picture }) => {
-  const imageUrl = `${API_IMAGE_URL}/${picture}`;
+  const imageUrl = `${picture}`;
   return (
     <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
       <div className="relative h-64 overflow-hidden">
