@@ -3,7 +3,6 @@ import { Event, EventStatus } from '../types';
 
 export const API_BASE_URL_V3 = 'https://api.gpadaka.com/api3';
 export const API_BASE_URL_V1 = 'https://api.gpadaka.com/api1';
-export const API_IMAGE_BASE_URL = 'https://api.gpadaka.com';
 
 const transformEventData = (eventDataFromApi: any): Event => {
     return {

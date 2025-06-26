@@ -1,7 +1,6 @@
 // src/feature/vendors/events/components/EventDetailsDisplay.tsx
 import { Calendar, MapPin, Users, Award } from 'lucide-react';
 import { Event } from '../../types';
-import { API_IMAGE_BASE_URL } from '../../services/eventApiService';
 
 interface EventDetailsDisplayProps {
     event: Event;
@@ -44,7 +43,7 @@ export default function EventDetailsDisplay({
                         <Users className="h-5 w-5 text-gray-400" />
                         <div>
                             <p className="font-semibold text-gray-900">Attendees</p>
-                            <p className="text-gray-600">{event.attendees}/{event.max_attendees > 0 ? event.max_attendees : 'Unlimited'} Attend</p>
+                            <p className="text-gray-600">{event.attendees}/{event.whitelisted > 0 ? event.whitelisted : 'Base on registered member'} Attend</p>
                         </div>
                     </div>
                     <div className="flex items-center space-x-3">
@@ -64,7 +63,7 @@ export default function EventDetailsDisplay({
                 <h2 className="text-xl font-bold text-gray-900 mb-4">Event Image</h2>
                 {event.picture ? (
                     <div className="relative h-48 rounded-xl overflow-hidden">
-                        <img src={`${API_IMAGE_BASE_URL}/${event.picture}`} alt={event.title} className="w-full h-full object-cover"/>
+                        <img src={`${event.picture}`} alt={event.title} className="w-full h-full object-cover"/>
                     </div>
                 ) : ( <p className="text-gray-500">No image available.</p> )}
             </div>

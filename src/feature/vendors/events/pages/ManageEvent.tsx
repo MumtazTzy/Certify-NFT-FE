@@ -25,7 +25,7 @@ import {
 
 // Import UI Components
 import EventHeader from '../components/ManageEvent/Header';
-import EventDetailsDisplay from '../components/ManageEvent/Display';
+import EventDetailsDisplay from '../components/ManageEvent/EventDetail';
 import EventControlPanel from '../components/ManageEvent/ControlPanel';
 import EventQuickActions from '../components/ManageEvent/QuickActions';
 import EventStatistics from '../components/ManageEvent/Statistics';
