@@ -1,7 +1,16 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../../auth/hooks/useAuth';
 
-function MetadataModal({ open, onClose, image, metadata, error }: { open: boolean; onClose: () => void; image?: string; metadata?: Record<string, any>; error?: string | null }) {
+function ipfsToW3sUrl(ipfsUrl?: string) {
+  if (!ipfsUrl) return '';
+  if (ipfsUrl.startsWith('ipfs://')) {
+    const hash = ipfsUrl.replace('ipfs://', '');
+    return `https://${hash}.ipfs.w3s.link/`;
+  }
+  return ipfsUrl;
+}
+
+function MetadataModal({ open, onClose, image, metadata, error, tokenURI }: { open: boolean; onClose: () => void; image?: string; metadata?: Record<string, any>; error?: string | null; tokenURI?: string }) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
@@ -9,22 +18,52 @@ function MetadataModal({ open, onClose, image, metadata, error }: { open: boolea
         <button onClick={onClose} className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl">&times;</button>
         {/* Kiri: Gambar */}
         <div className="flex-shrink-0 flex items-center justify-center mb-4 md:mb-0 md:mr-8">
-          <img
-            src={image.startsWith('ipfs://') ? `https://ipfs.io/ipfs/${image.replace('ipfs://', '')}` : image}
-            alt="Certificate"
-            className="w-48 h-48 object-cover rounded-xl border"
-          />
+          {image ? (
+            <img
+              src={ipfsToW3sUrl(image)}
+              alt="Certificate"
+              className="w-48 h-48 object-cover rounded-xl border"
+            />
+          ) : (
+            <div className="w-48 h-48 flex items-center justify-center bg-gray-100 rounded-xl border text-gray-400">No Image</div>
+          )}
         </div>
         {/* Kanan: Metadata tabel */}
         <div className="flex-1 overflow-x-auto">
           <table className="w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
             <tbody>
-              {Object.entries(metadata).map(([key, value]) => (
-                <tr key={key} className="border-b last:border-b-0">
-                  <td className="font-semibold capitalize py-2 px-3 bg-gray-50 w-1/3 align-top">{key}</td>
-                  <td className="py-2 px-3 break-all">{String(value)}</td>
+              {metadata?.name && (
+                <tr className="border-b">
+                  <td className="font-semibold capitalize py-2 px-3 bg-gray-50 w-1/3 align-top">name</td>
+                  <td className="py-2 px-3 break-all">{String(metadata.name)}</td>
                 </tr>
-              ))}
+              )}
+              {metadata?.description && (
+                <tr className="border-b">
+                  <td className="font-semibold capitalize py-2 px-3 bg-gray-50 w-1/3 align-top">description</td>
+                  <td className="py-2 px-3 break-all">{String(metadata.description)}</td>
+                </tr>
+              )}
+              {tokenURI && (
+                <tr className="border-b">
+                  <td className="font-semibold capitalize py-2 px-3 bg-gray-50 w-1/3 align-top">Metadata</td>
+                  <td className="py-2 px-3 break-all">
+                    <a href={ipfsToW3sUrl(tokenURI)} target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:underline">
+                      {ipfsToW3sUrl(tokenURI)}
+                    </a>
+                  </td>
+                </tr>
+              )}
+              {metadata?.image && (
+                <tr className="border-b last:border-b-0">
+                  <td className="font-semibold capitalize py-2 px-3 bg-gray-50 w-1/3 align-top">image</td>
+                  <td className="py-2 px-3 break-all">
+                    <a href={ipfsToW3sUrl(String(metadata.image))} target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:underline">
+                      {ipfsToW3sUrl(String(metadata.image))}
+                    </a>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -41,6 +80,7 @@ export default function VerifyCertificate() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImage, setModalImage] = useState('');
   const [modalMetadata, setModalMetadata] = useState<Record<string, any>>({});
+  const [modalTokenURI, setModalTokenURI] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,11 +99,8 @@ export default function VerifyCertificate() {
       if (!res.ok) throw new Error('Failed to verify certificate');
       const data = await res.json();
       if (data && data.valid && data.data && data.data.valid && data.data.metadata) {
-        setModalImage(
-          data.data.metadata.image.startsWith('ipfs://')
-            ? `https://ipfs.io/ipfs/${data.data.metadata.image.replace('ipfs://', '')}`
-            : data.data.metadata.image
-        );
+        setModalImage(ipfsToW3sUrl(data.data.metadata.image));
+        setModalTokenURI(data.data.tokenURI);
         setModalMetadata(data.data.metadata);
         setModalOpen(true);
       } else {
@@ -110,7 +147,7 @@ export default function VerifyCertificate() {
           </button>
         </form>
       </div>
-      <MetadataModal open={modalOpen} onClose={() => setModalOpen(false)} image={modalImage} metadata={modalMetadata} error={error} />
+      <MetadataModal open={modalOpen} onClose={() => setModalOpen(false)} image={modalImage} metadata={modalMetadata} error={error} tokenURI={modalTokenURI} />
     </div>
   );
 }
