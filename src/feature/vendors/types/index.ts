@@ -1,7 +1,7 @@
 // src/types/index.ts
 
 // Tipe untuk kemungkinan status event
-export type EventStatus = 'upcoming' | 'active' | 'completed' | 'canceled' | 'minting' | 'ongoing';
+export type EventStatus = 'upcoming' | 'ended' | 'completed' | 'canceled' | 'minting' | 'ongoing';
 
 export interface Event {
 id: number; // Sebelumnya string
@@ -19,6 +19,9 @@ id: number; // Sebelumnya string
   minted: number; // Sebelumnya certificates
   whitelisted: number;
   maxattendees: number;
+  // --- TAMBAHKAN ATAU PASTIKAN PROPERTI INI ADA ---
+  certificates_minted?: number; // Jumlah sertifikat yang sudah di-mint
+  whitelisted_count?: number;   // Jumlah pengguna di whitelist
 
   // Data yang belum digunakan di dashboard saat ini (siap untuk masa depan)
   vendor_id: number;

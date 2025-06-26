@@ -78,10 +78,11 @@ const uploadCertificateImageAPI = async (
             throw new Error(result.message || `Upload failed. Status: ${response.status}`);
         }
         console.log("Upload successful response:", result);
+        // Di dalam uploadCertificateImageAPI
         return { 
             message: result.message || 'Certificate uploaded.', 
-            filePath: result.urlCertificate || result.filePath, 
-            tokenURI: result.tokenURI,
+            filePath: result.urlCertificate || result.filePath, // `urlCertificate` dari respons Anda
+            tokenURI: result.tokenURI, // Ini akan mengambil "ipfs://bafk..."
             event_id: result.event_id, 
             certificateId: result.id || result.certificateId 
         }; 
@@ -254,9 +255,12 @@ export default function ManageEvent() {
                 uploadTargetUser.walletAddress, eventId, user.walletAddress
             );
             setUploadedCertificates((prev) => ({ 
-                ...prev, [uploadTargetUser.id]: { 
-                    filePath: result.filePath || "unknown_path", tokenURI: result.tokenURI,
-                    uploadedEventId: result.event_id, certificateId: result.certificateId,
+                ...prev, 
+                [uploadTargetUser.id]: { 
+                    filePath: result.filePath || "unknown_path", 
+                    tokenURI: result.tokenURI, // <<< PASTIKAN INI DISIMPAN
+                    uploadedEventId: result.event_id, 
+                    certificateId: result.certificateId,
                     apiResponse: result 
                 } 
             }));

@@ -1,3 +1,5 @@
+// src/feature/vendors/pages/VendorDashboard.tsx
+
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -8,16 +10,16 @@ import {
   BarChart3, 
   Settings, 
   AlertTriangle,
-  ClipboardList // Ikon untuk Whitelisted
+  ClipboardList,
+  Eye, 
+  EyeOff 
 } from 'lucide-react';
 
 import { useAuth } from '../../auth/hooks/useAuth';
-// ✅ PERBAIKAN: Path impor disesuaikan agar cocok dengan nama file service yang benar.
 import { fetchVendorEvents } from '../services/DashboardServices'; 
-// Pastikan tipe Event di file ini memiliki properti 'whitelisted' dan 'active'
 import { Event } from '../types'; 
 
-// --- Komponen Helper (Tidak ada perubahan, sudah baik) ---
+// --- Komponen Helper (Tidak ada perubahan) ---
 const DashboardLoading = () => (
   <div className="flex items-center justify-center min-h-[60vh]">
     <div className="text-center">
@@ -35,18 +37,19 @@ const ErrorMessage = ({ message }: { message: string }) => (
     </div>
 );
 
-
 // --- Komponen Halaman Utama ---
 export default function VendorDashboard() {
-  const { walletAddress } = useAuth();
+  const { user } = useAuth();
+  const walletAddress = user?.walletAddress;
   
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-// Di dalam VendorDashboard.tsx
+  const [showAllEvents, setShowAllEvents] = useState(false);
+  const INITIAL_DISPLAY_COUNT = 5;
 
-useEffect(() => {
+  useEffect(() => {
     if (!walletAddress) {
       setIsLoading(false);
       setError("Could not find wallet address. Please try logging in again.");
@@ -56,29 +59,64 @@ useEffect(() => {
     const loadData = async () => {
       try {
         setIsLoading(true);
-        // Langkah 1: Ambil daftar event dasar
-        const baseEvents = await fetchVendorEvents(walletAddress);
+        const baseEvents: Event[] = await fetchVendorEvents(walletAddress); // Pastikan fetchVendorEvents mengembalikan Event[]
 
-        // Langkah 2: Buat promise untuk setiap panggilan whitelist
-        const eventsWithWhitelist = await Promise.all(
-          baseEvents.map(async (event) => {
+        // --- Langkah Pengurutan ---
+        // Pastikan baseEvents adalah array sebelum mencoba sort
+        if (!Array.isArray(baseEvents)) {
+            console.error("fetchVendorEvents did not return an array:", baseEvents);
+            setEvents([]); // Atur ke array kosong atau tangani error
+            setError("Failed to load events data in expected format.");
+            setIsLoading(false);
+            return;
+        }
+
+        const sortedEvents = [...baseEvents].sort((a, b) => { // Buat salinan sebelum sort untuk menghindari mutasi state (jika baseEvents adalah state)
+          // Penanganan jika start_date bisa null/undefined atau bukan string tanggal valid
+          const timeA = a.start_date ? new Date(a.start_date).getTime() : 0;
+          const timeB = b.start_date ? new Date(b.start_date).getTime() : 0;
+
+          // Jika salah satu tanggal tidak valid (getTime() menghasilkan NaN), perlakukan sebagai tanggal yang lebih lama
+          if (isNaN(timeA) && isNaN(timeB)) return 0; // Keduanya tidak valid, anggap sama
+          if (isNaN(timeA)) return 1;  // Anggap a lebih lama (pindahkan ke akhir untuk descending)
+          if (isNaN(timeB)) return -1; // Anggap b lebih lama (pindahkan ke akhir untuk descending)
+
+          return timeB - timeA; // timeB - timeA untuk descending (terbaru dulu)
+        });
+        // --- Akhir Langkah Pengurutan ---
+
+        // Debugging: Cetak beberapa event pertama setelah diurutkan
+        console.log("Sorted Events (first 3):", sortedEvents.slice(0, 10).map(e => ({ title: e.title, start_date: e.start_date })));
+
+        const eventsWithData = await Promise.all(
+          sortedEvents.map(async (event) => { // Gunakan sortedEvents di sini
+            let whitelistedCount = 0;
             try {
               const res = await fetch(`https://api.gpadaka.com/api3/api/events/${event.id}/whitelist`);
-              const whitelistData = await res.json();
-              const whitelistedCount = Array.isArray(whitelistData) ? whitelistData.length : 0;
-              // Langkah 3: Gabungkan data
-              return { ...event, whitelisted: whitelistedCount };
+              if (res.ok) {
+                const whitelistData = await res.json();
+                whitelistedCount = Array.isArray(whitelistData) 
+                                   ? whitelistData.length 
+                                   : (whitelistData?.count || whitelistData?.data?.length || 0);
+              } else {
+                console.warn(`Failed to fetch whitelist for event ${event.id}: ${res.status}`);
+              }
             } catch (e) {
-              // Jika gagal fetch whitelist, kembalikan event asli
-              return { ...event, whitelisted: 0 };
+              console.error(`Error fetching whitelist for event ${event.id}:`, e);
             }
+            return { 
+                ...event, 
+                whitelisted_count: event.whitelisted_count ?? whitelistedCount,
+                certificates_minted: event.certificates_minted ?? 0,
+            };
           })
         );
         
-        setEvents(eventsWithWhitelist);
+        setEvents(eventsWithData);
         setError(null);
       } catch (err: any) {
-        setError(err.message || 'An unknown error occurred.');
+        console.error("Error in loadData:", err);
+        setError(err.message || 'An unknown error occurred while loading data.');
       } finally {
         setIsLoading(false);
       }
@@ -86,23 +124,23 @@ useEffect(() => {
 
     loadData();
   }, [walletAddress]);
-  // Kalkulasi statistik dengan 5 metrik
+
+  // ... (sisa kode komponen tetap sama: stats, getStatusColor, handleToggleViewEvents, displayedEvents, JSX)
   const stats = useMemo(() => {
     if (!events) return { totalEvents: 0, totalCertificates: 0, totalAttendees: 0, totalWhitelisted: 0, activeEvents: 0 };
     
     const totalEvents = events.length;
-    const totalCertificates = events.reduce((sum, event) => sum + (event.minted || 0), 0); 
+    const totalCertificates = events.reduce((sum, event) => sum + (event.certificates_minted || 0), 0); 
     const totalAttendees = events.reduce((sum, event) => sum + (event.attendees || 0), 0);
-    const totalWhitelisted = events.reduce((sum, event) => sum + (event.whitelisted || 0), 0);
-    const activeEvents = events.filter(event => event.status === 'active' || event.status === 'ongoing' || event.status === 'minting').length;
+    const totalWhitelisted = events.reduce((sum, event) => sum + (event.whitelisted_count || 0), 0);
+    const activeEvents = events.filter(event => event.status === 'upcoming' || event.status === 'ongoing' || event.status === 'minting').length;
 
     return { totalEvents, totalCertificates, totalAttendees, totalWhitelisted, activeEvents };
   }, [events]);
 
   const getStatusColor = (status: Event['status']) => {
-    const colors: { [key: string]: string } = {
+    const colors: Record<Event['status'], string> = {
       upcoming: 'bg-blue-100 text-blue-800',
-      active: 'bg-green-100 text-green-800',
       ongoing: 'bg-green-100 text-green-800',
       minting: 'bg-purple-100 text-purple-800',
       completed: 'bg-gray-200 text-gray-800',
@@ -111,6 +149,17 @@ useEffect(() => {
     };
     return colors[status] || colors.completed;
   };
+
+  const handleToggleViewEvents = () => {
+    setShowAllEvents(prev => !prev);
+  };
+
+  const displayedEvents = useMemo(() => {
+    if (showAllEvents) {
+      return events; // events sudah diurutkan saat di-load
+    }
+    return events.slice(0, INITIAL_DISPLAY_COUNT); // events.slice juga akan mengambil dari array yang sudah diurutkan
+  }, [events, showAllEvents]);
   
   if (isLoading) {
     return <DashboardLoading />;
@@ -139,7 +188,7 @@ useEffect(() => {
 
         {!error && (
             <>
-                {/* Stats Grid dengan 5 item dan urutan yang lebih logis */}
+                {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
                   <div className="bg-white rounded-2xl shadow-lg p-6">
                     <div className="flex items-center justify-between">
@@ -176,11 +225,28 @@ useEffect(() => {
                 {/* Tabel Event */}
                 <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold text-gray-900">Recent Events</h2>
-                    <Link to="/vendor/events/all" className="text-purple-600 hover:text-purple-700 font-semibold text-sm">View All Events</Link>
+                    <h2 className="text-xl font-bold text-gray-900">Your Events</h2>
+                    {events.length > INITIAL_DISPLAY_COUNT && (
+                        <button 
+                            onClick={handleToggleViewEvents} 
+                            className="text-purple-600 hover:text-purple-700 font-semibold text-sm inline-flex items-center"
+                        >
+                            {showAllEvents ? (
+                                <>
+                                    <EyeOff className="h-4 w-4 mr-1" />
+                                    View Less
+                                </>
+                            ) : (
+                                <>
+                                    <Eye className="h-4 w-4 mr-1" />
+                                    View All Events ({events.length})
+                                </>
+                            )}
+                        </button>
+                    )}
                   </div>
                   <div className="overflow-x-auto">
-                    {events.length > 0 ? (
+                    {displayedEvents.length > 0 ? (
                       <table className="w-full text-sm text-left text-gray-500">
                         <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                           <tr>
@@ -194,19 +260,19 @@ useEffect(() => {
                           </tr>
                         </thead>
                         <tbody>
-                          {events.slice(0, 5).map(event => (
+                          {displayedEvents.map(event => (
                             <tr key={event.id} className="bg-white border-b hover:bg-gray-50">
                               <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">{event.title}</th>
                               <td className="px-6 py-4">{new Date(event.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
                               <td className="px-6 py-4"><span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>{event.status.charAt(0).toUpperCase() + event.status.slice(1)}</span></td>
-                              <td className="px-6 py-4 text-center font-medium">{event.whitelisted || 0}</td>
+                              <td className="px-6 py-4 text-center font-medium">{event.whitelisted_count || 0}</td>
                               <td className="px-6 py-4 text-center font-medium">{event.attendees || 0}</td>
-                              <td className="px-6 py-4 text-center font-medium text-purple-600">{event.minted || 0}</td>
+                              <td className="px-6 py-4 text-center font-medium text-purple-600">{event.certificates_minted || 0}</td>
                               <td className="px-6 py-4">
                                 <div className="flex items-center justify-center space-x-3">
                                   <Link to={`/vendor/event/${event.id}`} className="text-purple-600 hover:text-purple-700" title="Manage Event"><Settings className="h-5 w-5" /></Link>
                                   <Link to={`/vendor/event/${event.id}/whitelist`} className="text-blue-600 hover:text-blue-700" title="Manage Whitelist"><Users className="h-5 w-5" /></Link>
-                                  <Link to={`/vendor/event/${event.id}/minted`} className="text-green-600 hover:text-green-700" title="View Minted Certificates"><Award className="h-5 w-5" /></Link>
+                                  <Link to={`/vendor/event/${event.id}/minted-certificates`} className="text-green-600 hover:text-green-700" title="View Minted Certificates"><Award className="h-5 w-5" /></Link>
                                 </div>
                               </td>
                             </tr>
