@@ -241,7 +241,7 @@ export default function UserDashboard() {
               <h3 className="text-lg font-bold text-purple-800 mb-2">Verify Certificate</h3>
               <p className="text-sm text-purple-700 mb-4 text-center">Check the authenticity of a certificate by entering its code.</p>
               <Link
-                to="/verify"
+                to="/user/verify"
                 className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition-all"
               >
                 Go to Verification

@@ -34,6 +34,7 @@ import PrivacyPolicy from './feature/PrivacyPolicy';
 import UserDashboard from './feature/user/dashboard/UserDashboard';
 import UserProfile from './feature/user/UserProfile';
 import UploadCertificateForm from './feature/vendors/events/components/UploadCertificateForm';
+import Verify from './feature/user/events/pages/verify';
 import MintCertificateButton from './feature/user/certificates/components/MintCeritificateButton';
 
 // 3. Definisikan semua rute Anda sebagai objek JavaScript di luar komponen App
@@ -77,6 +78,7 @@ const router = createBrowserRouter([
       // User Routes
       { path: 'user/dashboard', element: <UserDashboard /> },
       { path: 'profile', element: <UserProfile /> },
+      {path:'user/verify', element: <Verify/>},
      
 
       // Error Routes
