@@ -92,7 +92,6 @@ export const uploadCertificateImageAPI = async (
     console.log(`Uploading certificate for user ${userAddress} for event ${eventIdContext}`);
     const UPLOAD_ENDPOINT = `${API_BASE_URL_V1}/api/certificate/upload`; 
     const formData = new FormData();
-    formData.append('name', name);
     formData.append('description', description);
     formData.append('image', file);
     formData.append('user_address', userAddress);
