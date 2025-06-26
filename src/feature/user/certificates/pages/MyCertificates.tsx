@@ -30,7 +30,7 @@ function MetadataModal({ open, onClose, url, txHash }: { open: boolean; onClose:
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      <div className="bg-white rounded-xl shadow-lg p-6 max-w-md w-full relative">
+      <div className="bg-white rounded-xl shadow-lg p-6 max-w-3xl w-full relative">
         <button onClick={onClose} className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl">&times;</button>
         <h2 className="text-lg font-bold mb-4">Certificate Metadata</h2>
         {loading && <div className="text-gray-500">Loading metadata...</div>}

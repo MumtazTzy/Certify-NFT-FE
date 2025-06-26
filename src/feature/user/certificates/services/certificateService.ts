@@ -1,5 +1,3 @@
-// src/services/certificateService.ts
-
 export interface Certificate {
   id: number;
   certificate_data: string;
