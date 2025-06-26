@@ -221,17 +221,33 @@ export default function UserDashboard() {
               View All Certificates
             </Link>
           </div>
-          {loadingCertificates ? (
-            <p>Loading certificates...</p>
-          ) : certificates.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {certificates.slice(0, 3).map((cert) => (
-                <CertificateCard key={cert.id} certificate={cert} />
-              ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Kiri: Sertifikat */}
+            <div>
+              {loadingCertificates ? (
+                <p>Loading certificates...</p>
+              ) : certificates.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {certificates.slice(0, 3).map((cert) => (
+                    <CertificateCard key={cert.id} certificate={cert} />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">No certificates found.</p>
+              )}
             </div>
-          ) : (
-            <p className="text-gray-500">No certificates found.</p>
-          )}
+            {/* Kanan: Verifikasi Sertifikat */}
+            <div className="flex flex-col items-center justify-center h-full bg-purple-50 rounded-2xl p-6">
+              <h3 className="text-lg font-bold text-purple-800 mb-2">Verify Certificate</h3>
+              <p className="text-sm text-purple-700 mb-4 text-center">Check the authenticity of a certificate by entering its code.</p>
+              <Link
+                to="/verify"
+                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition-all"
+              >
+                Go to Verification
+              </Link>
+            </div>
+          </div>
         </div>
 
         {/* Quick Actions */}
