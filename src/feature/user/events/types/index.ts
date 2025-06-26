@@ -23,5 +23,4 @@ export interface Event {
   agenda: AgendaItem[];
   whitelisted: number;
   organizer: string;
-  user_status?: 'present' | 'absent' | 'registered' | 'claimed';
 }

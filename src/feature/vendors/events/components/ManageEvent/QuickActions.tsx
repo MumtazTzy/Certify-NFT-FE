@@ -22,7 +22,7 @@ export default function EventQuickActions({ eventId, whitelistCount, renderUploa
                     <span>View Whitelist ({whitelistCount})</span>
                 </Link>
                 <Link 
-                    to={`/vendor/event/${eventId}/minted-certificates`} 
+                    to={`/vendor/event/${eventId}/minted`} 
                     className="w-full bg-green-50 hover:bg-green-100 text-green-700 py-3 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2"
                 >
                     <Award className="h-4 w-4" />
