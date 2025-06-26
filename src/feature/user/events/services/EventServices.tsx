@@ -29,6 +29,6 @@ export async function getEvents(): Promise<Event[]> {
     organizer: item.organizer || 'Unknown',
     description: item.description || '',
       image: item.picture
-      ? `https://api.gpadaka.com/${item.picture}`
+      ? `${item.picture}`
       : 'https://via.placeholder.com/400x200?text=No+Image',}));
 }

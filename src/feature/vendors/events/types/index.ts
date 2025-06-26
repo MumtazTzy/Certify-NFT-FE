@@ -80,3 +80,13 @@ export interface ApiWhitelistEntry {
   status: string; // misal: "approved"
   created_at: string;
 }
+
+export interface MintCertificateResponse {
+    message: string;
+    user_address: string;
+    tokenURI: string;
+    urlMetadata: string;
+    urlCertificate: string;
+    certificateType: string;
+    txHash: string; // transactionHash di kode Anda, txHash di API
+}
