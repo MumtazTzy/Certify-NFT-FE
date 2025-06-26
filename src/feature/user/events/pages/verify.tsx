@@ -21,8 +21,17 @@ export default function VerifyCertificate() {
         </div>
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">Your Wallet Address</label>
-          <div className="bg-purple-50 border border-purple-200 rounded-lg px-4 py-2 text-purple-800 font-mono text-sm">
-            {walletAddress ? walletAddress : 'Not connected'}
+          <div className="bg-purple-50 border border-purple-200 rounded-lg px-4 py-2 text-purple-800 font-mono text-sm break-all">
+            {walletAddress ? (
+              <span className="block sm:hidden">
+                {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+              </span>
+            ) : (
+              'Not connected'
+            )}
+            {walletAddress && (
+              <span className="hidden sm:block">{walletAddress}</span>
+            )}
           </div>
         </div>
         <button
