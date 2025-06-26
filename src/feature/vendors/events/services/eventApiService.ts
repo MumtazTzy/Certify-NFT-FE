@@ -54,25 +54,37 @@ export const cancelEventAPI = async (eventId: number, token?: string): Promise<{
     return result;
 };
 
-export const updateEventStatusAPI = async (eventId: number, newStatus: EventStatus, token?: string): Promise<{ message: string, event: Event }> => {
-    console.log(`Updating event ID ${eventId} to status: ${newStatus}`);
-    const headers: HeadersInit = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    const UPDATE_STATUS_ENDPOINT = `${API_BASE_URL_V3}/api/events/${eventId}/update-status`; 
-    const response = await fetch(UPDATE_STATUS_ENDPOINT, {
-        method: 'PUT', 
-        headers: headers,
-        body: JSON.stringify({ status: newStatus })
-    });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.message || 'Failed to update event status on the server.');
-    
-    const updatedEventFromApi = result.event || result; // API might return event directly or nested
-    return {
-        message: result.message,
-        event: transformEventData(updatedEventFromApi)
+export const updateEventStatusAPI = async (
+    eventId: number,
+    newStatus: EventStatus,
+    vendorWalletAddress: string // Dianggap wajib
+): Promise<{ message: string; event: Event }> => {
+    const targetUrl = `${API_BASE_URL_V3}/api/events/${eventId}/update`;
+
+    const requestPayload = {
+        status: newStatus,
+        wallet_address: vendorWalletAddress,
     };
+
+    const response = await fetch(targetUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        },
+        body: JSON.stringify(requestPayload),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({
+            message: `API Error (${response.status}): Failed to update event status. Unable to parse error response.`,
+        }));
+        throw new Error(errorData.message || `API Error (${response.status}): Failed to update event status.`);
+    }
+    const result = await response.json();
+    return result;
 };
+
 
 export const uploadCertificateImageAPI = async ( 
     file: File, name: string, description: string, userAddress: string, 
@@ -105,17 +117,15 @@ export const uploadCertificateImageAPI = async (
 };
 
 export const mintCertificateAPI = async ( 
-    userAddress: string, tokenURI: string, eventIdForMint: string, token?: string 
+    userAddress: string, tokenURI: string, eventIdForMint: string
 ): Promise<{ message: string, transactionHash?: string }> => {
     console.log(`Minting certificate for user ${userAddress}, tokenURI: ${tokenURI}, event_id: ${eventIdForMint}`);
     const MINT_ENDPOINT = `${API_BASE_URL_V1}/api/certificate/mint`;
     const body = JSON.stringify({
         user_address: userAddress, tokenURI: tokenURI, event_id: eventIdForMint,
     });
-    const headers: HeadersInit = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
     try {
-        const response = await fetch(MINT_ENDPOINT, { method: 'POST', headers: headers, body: body });
+        const response = await fetch(MINT_ENDPOINT, { method: 'POST', body: body });
         const result = await response.json();
         if (!response.ok) throw new Error(result.message || `Minting failed. Status: ${response.status}`);
         return { message: result.message || 'Certificate minted.', transactionHash: result.transactionHash };
