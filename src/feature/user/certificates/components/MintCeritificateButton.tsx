@@ -7,7 +7,7 @@ interface MintCertificateButtonProps {
   disabled?: boolean;
 }
 
-const API_BASE_URL = "https://api.gpadaka.com/api3";
+const API_BASE_URL = "https://api.gpadaka.com/api1";
 
 const MintCertificateButton: React.FC<MintCertificateButtonProps> = (props) => {
   const params = useParams<{ id: string }>();
