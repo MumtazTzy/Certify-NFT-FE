@@ -6,11 +6,90 @@ import WalletConnectPrompt from '../components/WalletConnectPrompt';
 import { useAuth } from '../../../auth/hooks/useAuth';
 import { Certificate, fetchCertificatesByWallet } from '../services/certificateService';
 
+// Modal metadata dengan fetch detail
+function MetadataModal({ open, onClose, url, txHash }: { open: boolean; onClose: () => void; url: string; txHash: string }) {
+  const [meta, setMeta] = useState<any | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open || !url) return;
+    setMeta(null);
+    setError(null);
+    setLoading(true);
+    fetch(url)
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch metadata');
+        return res.json();
+      })
+      .then(data => setMeta(data))
+      .catch(err => setError(err.message || 'Failed to fetch metadata'))
+      .finally(() => setLoading(false));
+  }, [open, url]);
+
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+      <div className="bg-white rounded-xl shadow-lg p-6 max-w-md w-full relative">
+        <button onClick={onClose} className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl">&times;</button>
+        <h2 className="text-lg font-bold mb-4">Certificate Metadata</h2>
+        {loading && <div className="text-gray-500">Loading metadata...</div>}
+        {error && <div className="text-red-500">{error}</div>}
+        {meta && (
+          <table className="w-full text-sm mb-4 border border-gray-200 rounded-lg overflow-hidden">
+            <tbody>
+              <tr className="border-b">
+                <td className="font-semibold capitalize py-2 px-3 bg-gray-50 w-1/3 align-top">Metadata URL</td>
+                <td className="py-2 px-3 break-all">
+                  <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">{url}</a>
+                </td>
+              </tr>
+              {Object.entries(meta).map(([key, value]) => (
+                <tr key={key} className="border-b last:border-b-0">
+                  <td className="font-semibold capitalize py-2 px-3 bg-gray-50 w-1/3 align-top">{key}</td>
+                  <td className="py-2 px-3 break-all">
+                    {typeof value === 'string' && value.startsWith('ipfs://') ? (
+                      <a href={`https://ipfs.io/ipfs/${value.replace('ipfs://', '')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">{value}</a>
+                    ) : key === 'image' && typeof value === 'string' ? (
+                      <a
+                        href={value.startsWith('ipfs://') ? `https://ipfs.io/ipfs/${value.replace('ipfs://', '')}` : value}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 underline break-all"
+                      >
+                        {value}
+                      </a>
+                    ) : (
+                      <span className="break-all">{String(value)}</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        <div className="mt-2">
+          <span className="font-semibold">Transaction Hash:</span>{' '}
+          <a
+            href={`https://sepolia.etherscan.io/tx/${txHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 underline break-all font-mono text-xs"
+          >
+            {txHash}
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MyCertificatesPage() {
   const { isAuthenticated, walletAddress, login } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(false);
+  const [modalUrl, setModalUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!walletAddress) return;
@@ -37,46 +116,58 @@ export default function MyCertificatesPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 flex flex-col items-center justify-center">
-      <h1 className="text-4xl font-bold text-gray-900 mb-6 text-center">My Certificates</h1>
-
-      <input
-        type="text"
-        placeholder="Search certificates..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full max-w-xl mb-6 p-3 border border-gray-300 rounded-lg shadow-sm"
-      />
+    <div className="min-h-screen bg-gray-50 py-12 px-4">
+      <div className="flex flex-col md:flex-row md:items-center md:space-x-6 mb-8">
+        <h1 className="text-4xl font-bold text-gray-900 mb-4 md:mb-0">My Certificates</h1>
+        <input
+          type="text"
+          placeholder="Search certificates..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full max-w-xs p-3 border border-gray-300 rounded-lg shadow-sm"
+        />
+      </div>
 
       {loading ? (
         <p>Loading certificates...</p>
       ) : filtered.length > 0 ? (
-        <div className="w-full max-w-3xl mx-auto overflow-x-auto">
-          <table className="min-w-full bg-white rounded-xl shadow-lg">
-            <thead>
-              <tr>
-                <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 border-b">Event</th>
-                <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 border-b">Description</th>
-                <th className="py-3 px-6 text-center text-sm font-semibold text-gray-700 border-b">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((cert) => (
-                <tr key={cert.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="py-4 px-6 font-medium text-gray-900">{cert.event_title}</td>
-                  <td className="py-4 px-6 text-gray-600">{cert.event_description}</td>
-                  <td className="py-4 px-6 text-center">
-                    <Link
-                      to={"#"}
-                      className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold shadow-sm transition-colors"
-                    >
-                      View Details
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="w-full max-w-6xl">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-8">
+            {filtered.map((cert) => {
+              let urlMetadata = '';
+              let urlCertificate = '';
+              try {
+                const parsed = JSON.parse(cert.certificate_data);
+                urlMetadata = parsed.urlMetadata || '';
+                urlCertificate = parsed.urlCertificate || '';
+              } catch {}
+              return (
+                <div key={cert.id} className="flex flex-col items-center">
+                  <div className="bg-white p-3 rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition mb-2 w-full flex flex-col items-center">
+                    {urlCertificate ? (
+                      <img
+                        src={urlCertificate}
+                        alt={cert.event_title}
+                        className="w-40 h-40 object-cover rounded-xl cursor-pointer mb-2"
+                        onClick={() => urlMetadata && setModalUrl(`${urlMetadata}|${cert.mint_transaction_hash}`)}
+                        title="Click to view metadata"
+                      />
+                    ) : (
+                      <span className="inline-block w-40 h-40 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 mb-2">
+                        <Award className="h-12 w-12" />
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <MetadataModal
+            open={!!modalUrl}
+            onClose={() => setModalUrl(null)}
+            url={modalUrl ? modalUrl.split('|')[0] : ''}
+            txHash={modalUrl ? modalUrl.split('|')[1] : ''}
+          />
         </div>
       ) : (
         <div className="text-center py-12">
