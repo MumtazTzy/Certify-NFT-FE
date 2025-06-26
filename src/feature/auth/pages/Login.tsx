@@ -1,7 +1,7 @@
 // src/pages/Login.tsx
 
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Wallet, CheckCircle, Shield, AlertCircle } from 'lucide-react';
 
 import { connectWallet, signMessage } from '../lib/wallet';
@@ -15,20 +15,27 @@ export default function Login() {
 
   const { login, isAuthenticated, user, walletAddress, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const redirectPath = params.get('redirect');
+  const [hasRedirected, setHasRedirected] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated && user?.role) {
+    if (isAuthenticated && user?.role && !hasRedirected) {
       if (isRegistering) {
-        navigate('/register');
-        return;
+        navigate('/register/vendor');
+        setHasRedirected(true);
+        return; 
       }
       if (user.role === 'vendors') {
         navigate('/vendor/dashboard');
+        setHasRedirected(true);
       } else if (user.role === 'users') {
         navigate('/user/dashboard');
+        setHasRedirected(true);
       }
     }
-  }, [isAuthenticated, user, isRegistering, navigate]);
+  }, [isAuthenticated, user, isRegistering, navigate, hasRedirected]);
 
   useEffect(() => {
     if (isAuthenticated) setError('');
@@ -50,14 +57,17 @@ export default function Login() {
 
       // ✅ INI PERUBAHAN UTAMA
       if (data.isNewUser) {
-        // Jika pengguna baru:
-        // 1. Simpan state login parsial (wallet ada, tapi role belum ada)
         login(address, null); 
-        // 2. Arahkan ke halaman pemilihan role
-        navigate('/register'); 
+        if (redirectPath) {
+          navigate(redirectPath);
+          setHasRedirected(true);
+        }
       } else {
-        // Jika pengguna sudah ada, login penuh seperti biasa
         login(address, data.role);
+        if (redirectPath) {
+          navigate(redirectPath);
+          setHasRedirected(true);
+        }
         // Navigasi ke dashboard akan ditangani oleh useEffect
       }
 
@@ -66,7 +76,7 @@ export default function Login() {
     } finally {
       setIsLoading(false);
     }
-}, [login, navigate]);
+}, [login, navigate, redirectPath]);
 
   const handleDisconnect = () => {
     logout();

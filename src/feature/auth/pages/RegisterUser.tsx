@@ -31,7 +31,7 @@ export default function RegisterUser() {
   // Jika pengguna mencoba mengakses halaman ini tanpa login, mereka akan diarahkan kembali.
   useEffect(() => {
     if (!isAuthenticated || !walletAddress) {
-      navigate('/login');
+      navigate('/login?redirect=/register/user');
     }
   }, [isAuthenticated, walletAddress, navigate]);
 

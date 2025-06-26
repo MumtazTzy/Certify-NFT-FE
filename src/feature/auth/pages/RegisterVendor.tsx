@@ -38,7 +38,7 @@ export default function RegisterVendor() {
   // Jika pengguna mencoba mengakses halaman ini tanpa login, arahkan kembali.
   useEffect(() => {
     if (!isAuthenticated || !walletAddress) {
-      navigate('/login'); // Arahkan ke login jika tidak terautentikasi
+      navigate('/login?redirect=/register/vendor');
     }
   }, [isAuthenticated, walletAddress, navigate]);
 
