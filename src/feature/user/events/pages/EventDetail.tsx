@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, DoorOpen, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast'; 
 // Import types, helpers, and components
 import { Event } from '../types';
@@ -32,6 +32,7 @@ const EventDetail: React.FC = () => {
   const [isWhitelisted, setIsWhitelisted] = useState<boolean>(false); // <-- STATE BARU
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [dummyAttended, setDummyAttended] = useState(false);
 
    const handleConfirmCancel = async () => {
     setIsModalOpen(false); // Tutup modal terlebih dahulu
@@ -105,6 +106,9 @@ const EventDetail: React.FC = () => {
     }
   }, [id]);
 
+  // Determine if user can attend (dummy logic)
+  const canDummyAttend = event?.status === 'ongoing' && !dummyAttended && event?.user_status !== 'present' && event?.user_status !== 'claimed';
+
   if (loading) {
     return <Loader message="Loading event details..." />;
   }
@@ -158,8 +162,8 @@ const EventDetail: React.FC = () => {
                 isCancelling={isCancelling} // Beri tahu StatusCard saat sedang loading
                 userRole={user?.role} // <-- tambahkan prop role
               />
-              <EventStatsCard whitelisted={event.whitelisted} maxAttendees={event.maxattendees} />
-              <ShareCard />
+            <EventStatsCard whitelisted={event.whitelisted} maxAttendees={event.maxattendees} />
+            <ShareCard />
           </div>
         </div>
       </div>

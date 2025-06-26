@@ -1,11 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Award, Users, BarChart3, TrendingUp, User } from 'lucide-react';
+import { Calendar, Award, Users, BarChart3, TrendingUp, User, CheckCircle, DoorOpen } from 'lucide-react';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { Event, fetchUserEvents } from '../events/services/MyeventServices';
 import { Certificate, fetchCertificatesByWallet } from '../certificates/services/certificateService';
 import { connectWallet, signMessage } from '../../auth/lib/wallet';
 import { loginWithWallet } from '../../auth/services/authServices';
+import { useState as useLocalState } from 'react';
+import toast from 'react-hot-toast';
+
+// Dummy token for simulation
+const DUMMY_TOKEN = 'DUMMYTOKEN';
 
 export default function UserDashboard() {
   const { isAuthenticated, walletAddress, login } = useAuth();
@@ -15,6 +20,10 @@ export default function UserDashboard() {
   const [loadingCertificates, setLoadingCertificates] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
+  // Attendance modal state
+  const [attendanceModal, setAttendanceModal] = useLocalState<{ open: boolean; eventId: number | null }>({ open: false, eventId: null });
+  const [attendanceToken, setAttendanceToken] = useLocalState('');
+  const [attendedEvents, setAttendedEvents] = useLocalState<number[]>([]);
 
   useEffect(() => {
     if (!walletAddress) return;
@@ -200,10 +209,73 @@ export default function UserDashboard() {
           {loadingEvents ? (
             <p>Loading events...</p>
           ) : events.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {events.slice(0, 3).map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))}
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white rounded-xl shadow-lg">
+                <thead>
+                  <tr>
+                    <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 border-b">Event</th>
+                    <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 border-b">Date</th>
+                    <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 border-b">Status</th>
+                    <th className="py-3 px-6 text-center text-sm font-semibold text-gray-700 border-b">View Detail</th>
+                    <th className="py-3 px-6 text-center text-sm font-semibold text-gray-700 border-b">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {events.slice(0, 3).map((event) => {
+                    // Determine button states and icons
+                    const isWhitelist = event.status === 'upcoming' && event.user_status === 'registered';
+                    const isAttended = attendedEvents.includes(event.id) || event.user_status === 'present' || event.user_status === 'claimed';
+                    const isMinted = event.user_status === 'claimed';
+                    const canAttend = event.status === 'ongoing' && !isAttended && !isWhitelist;
+                    const canMint = (event.status === 'ended' || event.status === 'minting') && isAttended && !isMinted && !isWhitelist;
+                    return (
+                      <tr key={event.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="py-4 px-6 font-medium text-gray-900">
+                          <div>{event.title}</div>
+                          <div className="text-xs text-gray-500">{event.location}</div>
+                        </td>
+                        <td className="py-4 px-6 text-gray-600">{new Date(event.start_date).toLocaleDateString()}</td>
+                        <td className="py-4 px-6 text-gray-600 capitalize">{event.status}</td>
+                        <td className="py-4 px-6 text-center">
+                          <Link
+                            to={`/events/${event.id}`}
+                            className="inline-block bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg font-semibold shadow-sm transition-colors"
+                          >
+                            View Detail
+                          </Link>
+                        </td>
+                        <td className="py-4 px-6 text-center space-x-2">
+                          {/* Attend Button */}
+                          {isAttended ? (
+                            <span className="inline-flex items-center justify-center bg-green-100 text-green-600 rounded-full p-2"><CheckCircle className="h-5 w-5" /></span>
+                          ) : (
+                            <button
+                              className={`inline-flex items-center justify-center bg-gray-100 hover:bg-blue-100 text-blue-600 rounded-full p-2 transition-colors ${!canAttend ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              disabled={!canAttend}
+                              title={canAttend ? 'Attend Event' : 'Cannot attend yet'}
+                              onClick={() => setAttendanceModal({ open: true, eventId: event.id })}
+                            >
+                              <DoorOpen className="h-5 w-5" />
+                            </button>
+                          )}
+                          {/* Mint Button */}
+                          {isMinted ? (
+                            <span className="inline-flex items-center justify-center bg-green-100 text-green-600 rounded-full p-2"><CheckCircle className="h-5 w-5" /></span>
+                          ) : (
+                            <button
+                              className={`inline-flex items-center justify-center bg-gray-100 hover:bg-purple-100 text-purple-600 rounded-full p-2 transition-colors ${!canMint ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              disabled={!canMint}
+                              title={canMint ? 'Mint Certificate' : 'Cannot mint yet'}
+                            >
+                              <Award className="h-5 w-5" />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           ) : (
             <p className="text-gray-500">No events found.</p>
@@ -278,6 +350,48 @@ export default function UserDashboard() {
             </div>
           </div>
         </div>
+
+        {/* Attendance Token Modal */}
+        {attendanceModal.open && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
+              <h3 className="text-lg font-bold mb-4 text-gray-900">Enter Attendance Token</h3>
+              <p className="mb-4 text-gray-600 text-sm">Ask the event vendor for your attendance token, then enter it below to mark your attendance.</p>
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-4"
+                placeholder="Enter token..."
+                value={attendanceToken}
+                onChange={e => setAttendanceToken(e.target.value)}
+                autoFocus
+              />
+              <div className="flex justify-end space-x-2">
+                <button
+                  className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300"
+                  onClick={() => { setAttendanceModal({ open: false, eventId: null }); setAttendanceToken(''); }}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700"
+                  onClick={() => {
+                    if (attendanceToken.trim() === DUMMY_TOKEN) {
+                      setAttendedEvents([...attendedEvents, attendanceModal.eventId!]);
+                      toast.success('Attendance successful!');
+                      setAttendanceModal({ open: false, eventId: null });
+                      setAttendanceToken('');
+                    } else {
+                      toast.error('Invalid token. Please try again.');
+                    }
+                  }}
+                  disabled={!attendanceToken.trim()}
+                >
+                  Submit
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
