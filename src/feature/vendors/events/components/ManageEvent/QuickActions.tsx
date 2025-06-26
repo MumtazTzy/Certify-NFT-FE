@@ -5,9 +5,10 @@ import { Users, Award, Settings } from 'lucide-react';
 interface EventQuickActionsProps {
     eventId: number;
     whitelistCount: number;
+    renderUploadCertificateButton?: React.ReactNode;
 }
 
-export default function EventQuickActions({ eventId, whitelistCount }: EventQuickActionsProps) {
+export default function EventQuickActions({ eventId, whitelistCount, renderUploadCertificateButton }: EventQuickActionsProps) {
     const navigate = useNavigate();
     return (
         <div className="bg-white rounded-2xl shadow-lg p-6">
@@ -27,13 +28,7 @@ export default function EventQuickActions({ eventId, whitelistCount }: EventQuic
                     <Award className="h-4 w-4" />
                     <span>View Minted Certificates</span>
                 </Link>
-                <button 
-                    onClick={() => navigate(`/vendor/event/${eventId}/metadata`)} 
-                    className="w-full bg-purple-50 hover:bg-purple-100 text-purple-700 py-3 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2"
-                >
-                    <Settings className="h-4 w-4" />
-                    <span>Edit Metadata</span>
-                </button>
+                {renderUploadCertificateButton}
             </div>
         </div>
     );

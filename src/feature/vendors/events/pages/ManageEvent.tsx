@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 import { Event, WhitelistEntry, EventStatus } from '../types'; 
 import ConfirmationModal from '../../../../components/ConfirmationModal';
 import Modal from '../../../../components/Modal'; 
-import FileUploadForm from '../components/FileUploadForm'; 
+import FileUploadForm from '../components/FileUploadForm';
 import { useAuth } from '../../../auth/hooks/useAuth';
 import { useWhitelist } from '../../events/hooks/useWhitelist';
 
@@ -57,6 +57,12 @@ export default function ManageEvent() {
     const [fileToUpload, setFileToUpload] = useState<File | null>(null);
     const [uploadModalError, setUploadModalError] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
+
+    const [eventCertificate, setEventCertificate] = useState<File | null>(null);
+    const [eventCertificateError, setEventCertificateError] = useState<string | null>(null);
+
+    const [pendingCertificate, setPendingCertificate] = useState<File | null>(null);
+    const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
     const loadEventData = useCallback(async () => {
         if (!eventIdAsNumber) {
@@ -204,40 +210,46 @@ export default function ManageEvent() {
         }
     };
     
-    const handleMintCertificate = async (userId: string) => {
-        const certificateData = uploadedCertificates[userId];
-        const targetUser = whitelist.find(u => u.id === userId);
+    const handleEventCertificateSelect = (file: File | null) => {
+        setEventCertificate(file);
+        setEventCertificateError(null);
+    };
 
+    const handleMintCertificate = async (userId: string) => {
+        const targetUser = whitelist.find(u => u.id === userId);
         if (!targetUser) { toast.error("User not found."); return; }
-        if (!certificateData || !certificateData.tokenURI) {
-            toast.error("Certificate data or TokenURI is missing."); return;
-        }
         if (!event) { toast.error("Event data not loaded."); return; }
-        
+        if (!eventCertificate) { toast.error("Please upload the event certificate first."); return; }
         if (event.status !== 'minting') {
             toast.error(`Minting is only allowed when the event is in 'minting' period. Current status: ${event.status}`); return;
         }
-
-        const eventIdForMint = certificateData.event_id_from_upload || String(eventIdAsNumber); 
-        if (!eventIdForMint) { toast.error("Event ID for minting is missing."); return; }
         if (!user || !user.walletAddress) { toast.error("Authentication token missing."); return; }
-
         setIsProcessing(true);
         try {
+            const uploadResult = await uploadCertificateImageAPI(
+                eventCertificate,
+                targetUser.name,
+                `Certificate for ${targetUser.name} - Event: ${event?.title || eventIdAsNumber}`,
+                targetUser.walletAddress,
+                eventIdAsNumber,
+                user.walletAddress
+            );
+            const tokenURI = uploadResult.tokenURI;
             const mintResult = await mintCertificateAPI(
-                targetUser.walletAddress, certificateData.tokenURI, 
-                String(eventIdForMint), user.walletAddress // Pass token here
+                targetUser.walletAddress,
+                tokenURI,
+                String(eventIdAsNumber)
             );
             setMintedCertificates((prev) => ({
-                ...prev, [userId]: { 
-                    transactionHash: mintResult.transactionHash, apiResponse: mintResult }
+                ...prev, [userId]: {
+                    transactionHash: mintResult.transactionHash, apiResponse: mintResult
+                }
             }));
             toast.success(mintResult.message || `Certificate for ${targetUser.name} minted!`);
-            // Update event's minted count
             if (event) {
-                 setEvent(prev => prev ? { ...prev, certificates_minted: (prev.certificates_minted || 0) + 1 } : null);
+                setEvent(prev => prev ? { ...prev, certificates_minted: (prev.certificates_minted || 0) + 1 } : null);
             }
-            refreshWhitelist(); // Potentially refresh whitelist if minting affects it
+            refreshWhitelist();
         } catch (err) {
             toast.error(err instanceof Error ? err.message : "Minting failed.");
         } finally {
@@ -257,6 +269,13 @@ export default function ManageEvent() {
             return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"><Users className="h-3 w-3 mr-1" />Present</span>;
         }
         return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Absent</span>;
+    };
+
+    const handleFileInputChange = (file: File | null) => {
+        if (file) {
+            setPendingCertificate(file);
+            setIsPreviewModalOpen(true);
+        }
     };
 
     if (loadingPage) { 
@@ -325,6 +344,53 @@ export default function ManageEvent() {
                             <EventQuickActions 
                                 eventId={event.id}
                                 whitelistCount={event.whitelisted ?? whitelist.length ?? 0}
+                                renderUploadCertificateButton={
+                                    <div className="flex flex-col items-center w-full">
+                                        <button
+                                            onClick={() => {
+                                                document.getElementById('event-certificate-upload-input')?.click();
+                                            }}
+                                            className={`w-full px-4 py-2 rounded-lg font-semibold shadow transition-colors ${eventCertificate ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'}`}
+                                        >
+                                            {eventCertificate ? (
+                                                <>
+                                                    <svg className="h-5 w-5 mr-2 inline text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                    Certificate Uploaded
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <svg className="h-5 w-5 mr-2 inline text-yellow-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                                                    </svg>
+                                                    Upload Certificate
+                                                </>
+                                            )}
+                                        </button>
+                                        <input
+                                            id="event-certificate-upload-input"
+                                            type="file"
+                                            accept="image/png,image/jpeg"
+                                            style={{ display: 'none' }}
+                                            onChange={e => {
+                                                if (e.target.files && e.target.files[0]) {
+                                                    handleFileInputChange(e.target.files[0]);
+                                                }
+                                            }}
+                                        />
+                                        {eventCertificate && (
+                                            <>
+                                                <img
+                                                    src={URL.createObjectURL(eventCertificate)}
+                                                    alt="Certificate Preview"
+                                                    className="mt-2 rounded-lg shadow max-h-32 border border-gray-200 object-contain"
+                                                    style={{ maxWidth: 160 }}
+                                                />
+                                            </>
+                                        )}
+                                    </div>
+                                }
                             />
                             <EventStatistics
                                 registrationRate={registrationRate}
@@ -388,6 +454,44 @@ export default function ManageEvent() {
                         </div> 
                     </div> 
                 </Modal> 
+            )}
+
+            {isPreviewModalOpen && pendingCertificate && (
+                <Modal
+                    isOpen={isPreviewModalOpen}
+                    onClose={() => { setIsPreviewModalOpen(false); setPendingCertificate(null); }}
+                    title="Preview Certificate"
+                >
+                    <div className="flex flex-col items-center">
+                        <img
+                            src={URL.createObjectURL(pendingCertificate)}
+                            alt="Certificate Preview"
+                            className="rounded-lg shadow max-h-64 border border-gray-200 object-contain mb-4"
+                            style={{ maxWidth: 320 }}
+                        />
+                        <div className="flex gap-4 mt-4">
+                            <button
+                                className="px-4 py-2 rounded bg-green-600 text-white font-semibold"
+                                onClick={() => {
+                                    setEventCertificate(pendingCertificate);
+                                    setIsPreviewModalOpen(false);
+                                    setPendingCertificate(null);
+                                }}
+                            >
+                                Confirm
+                            </button>
+                            <button
+                                className="px-4 py-2 rounded bg-gray-300 text-gray-800 font-semibold"
+                                onClick={() => {
+                                    setIsPreviewModalOpen(false);
+                                    setPendingCertificate(null);
+                                }}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
             )}
         </>
     );
