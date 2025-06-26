@@ -64,8 +64,7 @@ const UserStatusBadge = ({ status }: { status: Event['user_status'] }) => {
 // --- Komponen Utama ---
 
 export default function EventCard({ event }: EventCardProps) {
-  const API_IMAGE_BASE_URL = 'https://api.gpadaka.com/'; // Disesuaikan
-  const imageUrl = event.picture ? `${API_IMAGE_BASE_URL}/${event.picture}` : 'https://placehold.co/600x400/e2e8f0/cccccc?text=Event+Image';
+  const imageUrl = event.picture ? `${event.picture}` : 'https://placehold.co/600x400/e2e8f0/cccccc?text=Event+Image';
 
   const attendeesPercentage = typeof event.attendees === "number" && event.maxattendees > 0
     ? Math.min((event.attendees / event.maxattendees) * 100, 100) : 0;
