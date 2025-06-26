@@ -1,14 +1,14 @@
 // src/feature/vendors/events/pages/ManageEvent.tsx
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
-    ArrowLeft, Calendar, MapPin, Users, Award, Settings, Edit, Play, Pause, 
-    Loader2, AlertCircle, XCircle, UploadCloud, Sparkles, CheckCircle 
+    ArrowLeft, Calendar, MapPin, Users, Award, Settings, Edit, Play, 
+    Loader2, AlertCircle, XCircle, UploadCloud, Sparkles, CheckCircle, StopCircle, Info
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-import { Event, WhitelistEntry } from '../types'; 
+import { Event, WhitelistEntry, EventStatus } from '../types'; 
 import ConfirmationModal from '../../../../components/ConfirmationModal';
 import Modal from '../../../../components/Modal'; 
 import FileUploadForm from '../components/FileUploadForm'; 
@@ -20,99 +20,125 @@ const API_BASE_URL_V3 = 'https://api.gpadaka.com/api3';
 const API_BASE_URL_V1 = 'https://api.gpadaka.com/api1';
 const API_IMAGE_BASE_URL = 'https://api.gpadaka.com'; 
 
-const getEventData = async (eventId: string): Promise<Event> => {
+// GANTI DENGAN IMPLEMENTASI FETCH SEBENARNYA
+// Di ManageEvent.tsx (atau di mana pun fungsi getEventData didefinisikan)
+
+const getEventData = async (eventId: number): Promise<Event> => {
+    // console.log(`Fetching event data for ID: ${eventId}`); // Untuk debugging
     const response = await fetch(`${API_BASE_URL_V3}/api/events/${eventId}`);
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to parse error response' }));
         throw new Error(errorData.message || 'Failed to fetch event data.');
     }
-    return response.json();
+    const eventDataFromApi = await response.json();
+
+    // Transformasi dan pemberian nilai default agar sesuai dengan tipe Event kita
+    return {
+        id: eventDataFromApi.id,
+        title: eventDataFromApi.title,
+        description: eventDataFromApi.description,
+        organizer: eventDataFromApi.organizer,
+        location: eventDataFromApi.location,
+        picture: eventDataFromApi.picture,
+        requirements: Array.isArray(eventDataFromApi.requirements) ? eventDataFromApi.requirements : [],
+        agenda: Array.isArray(eventDataFromApi.agenda) ? eventDataFromApi.agenda : [],
+        
+        start_date: eventDataFromApi.start_date,
+        end_date: eventDataFromApi.end_date,
+        created_at: eventDataFromApi.created_at,
+        updated_at: eventDataFromApi.updated_at,
+        status: eventDataFromApi.status as EventStatus, // Pastikan status dari API adalah salah satu dari EventStatus
+
+        vendor_id: eventDataFromApi.vendor_id,
+        // Menggunakan snake_case sesuai definisi tipe Event kita
+        max_attendees: eventDataFromApi.max_attendees ?? (eventDataFromApi.maxattendees ?? 0), // Fallback ke maxattendees jika API mengirim itu
+        attendees: eventDataFromApi.attendees ?? 0,
+        whitelisted: eventDataFromApi.whitelisted ?? 0,
+        certificates_minted: eventDataFromApi.certificates_minted ?? (eventDataFromApi.minted ?? 0), // Fallback ke minted
+        
+        minting_active: eventDataFromApi.minting_active ?? false, // Default ke false jika tidak ada dari API
+        // token: eventDataFromApi.token, // Jika Anda menambahkan 'token' ke tipe Event
+    };
 };
 
-const cancelEventAPI = async (eventId: string, token?: string): Promise<{ message: string }> => {
+const cancelEventAPI = async (eventId: number, token?: string): Promise<{ message: string }> => {
+    console.log(`Canceling event ID: ${eventId}`);
     const headers: HeadersInit = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    const response = await fetch(`${API_BASE_URL_V3}/api/events/cancel/${eventId}`, {
-        method: 'POST',
-        headers: headers,
+    const response = await fetch(`${API_BASE_URL_V3}/api/events/${eventId}/cancel`, {
+        method: 'POST', headers: headers,
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.message || 'Failed to cancel the event.');
     return result;
 };
 
-const toggleMintingStatusAPI = async (eventId: string, newStatus: boolean, token?: string): Promise<{ message: string, event: Event }> => {
+const updateEventStatusAPI = async (eventId: number, newStatus: EventStatus, token?: string): Promise<{ message: string, event: Event }> => {
+    console.log(`Updating event ID ${eventId} to status: ${newStatus}`);
     const headers: HeadersInit = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
-    const TOGGLE_MINTING_ENDPOINT = `${API_BASE_URL_V3}/api/events/${eventId}/toggle-minting-status`; 
-    const response = await fetch(TOGGLE_MINTING_ENDPOINT, {
+    const UPDATE_STATUS_ENDPOINT = `${API_BASE_URL_V3}/api/events/${eventId}/update-status`; 
+    const response = await fetch(UPDATE_STATUS_ENDPOINT, {
         method: 'PUT', 
         headers: headers,
-        body: JSON.stringify({ minting_active: newStatus })
+        body: JSON.stringify({ status: newStatus })
     });
     const result = await response.json();
-    if (!response.ok) throw new Error(result.message || 'Failed to update minting status on the server.');
-    return result; 
+    if (!response.ok) throw new Error(result.message || 'Failed to update event status on the server.');
+    const updatedEventData = result.event || result;
+     return {
+        message: result.message,
+        event: { /* ... transformasi data seperti di getEventData ... */ } as Event
+    };
 };
 
-const uploadCertificateImageAPI = async (
-    file: File, name: string, description: string, userAddress: string,
-    eventIdForUploadContext: string, vendorAddress: string, token?: string
-): Promise<{ message: string, filePath?: string, tokenURI?: string, event_id?: string, certificateId?: string }> => {
+
+const uploadCertificateImageAPI = async ( 
+    file: File, name: string, description: string, userAddress: string, 
+    eventIdContext: number, vendorAddress: string
+): Promise<{ message: string, filePath?: string, tokenURI?: string, event_id_from_upload?: string, certificateId?: string }> => {
+    console.log(`Uploading certificate for user ${userAddress} for event ${eventIdContext}`);
     const UPLOAD_ENDPOINT = `${API_BASE_URL_V1}/api/certificate/upload`; 
     const formData = new FormData();
     formData.append('name', name);
     formData.append('description', description);
     formData.append('image', file);
     formData.append('user_address', userAddress);
-    formData.append('event_id', eventIdForUploadContext);
+    formData.append('event_id', String(eventIdContext));
     formData.append('vendor_address', vendorAddress);
-    const headers: HeadersInit = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
     try {
-        const response = await fetch(UPLOAD_ENDPOINT, { method: 'POST', body: formData, headers: headers });
+        const response = await fetch(UPLOAD_ENDPOINT, { method: 'POST', body: formData });
         const result = await response.json();
-        if (!response.ok) {
-            console.error("Upload failed response:", result);
-            throw new Error(result.message || `Upload failed. Status: ${response.status}`);
-        }
-        console.log("Upload successful response:", result);
-        // Di dalam uploadCertificateImageAPI
+        if (!response.ok) throw new Error(result.message || `Upload failed. Status: ${response.status}`);
         return { 
             message: result.message || 'Certificate uploaded.', 
-            filePath: result.urlCertificate || result.filePath, // `urlCertificate` dari respons Anda
-            tokenURI: result.tokenURI, // Ini akan mengambil "ipfs://bafk..."
-            event_id: result.event_id, 
+            filePath: result.urlCertificate || result.filePath,
+            tokenURI: result.tokenURI,
+            event_id_from_upload: result.event_id, 
             certificateId: result.id || result.certificateId 
         }; 
     } catch (error) {
-        console.error("Upload error catch:", error);
         if (error instanceof Error) throw error;
         throw new Error("Unknown upload error.");
     }
 };
 
-const mintCertificateAPI = async (
-    userAddress: string, tokenURI: string, eventIdFromUpload: string, token?: string
+const mintCertificateAPI = async ( 
+    userAddress: string, tokenURI: string, eventIdForMint: string, token?: string 
 ): Promise<{ message: string, transactionHash?: string }> => {
+    console.log(`Minting certificate for user ${userAddress}, tokenURI: ${tokenURI}, event_id: ${eventIdForMint}`);
     const MINT_ENDPOINT = `${API_BASE_URL_V1}/api/certificate/mint`;
     const body = JSON.stringify({
-        user_address: userAddress, tokenURI: tokenURI, event_id: String(eventIdFromUpload),
+        user_address: userAddress, tokenURI: tokenURI, event_id: eventIdForMint,
     });
     const headers: HeadersInit = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
     try {
         const response = await fetch(MINT_ENDPOINT, { method: 'POST', headers: headers, body: body });
         const result = await response.json();
-        if (!response.ok) {
-            console.error("Minting failed response:", result);
-            throw new Error(result.message || `Minting failed. Status: ${response.status}`);
-        }
-        console.log("Minting successful response:", result);
+        if (!response.ok) throw new Error(result.message || `Minting failed. Status: ${response.status}`);
         return { message: result.message || 'Certificate minted.', transactionHash: result.transactionHash };
     } catch (error) {
-        console.error("Minting error catch:", error);
         if (error instanceof Error) throw error;
         throw new Error("Unknown minting error.");
     }
@@ -120,14 +146,15 @@ const mintCertificateAPI = async (
 // --- Selesai API Service Functions ---
 
 export default function ManageEvent() {
-    const { id: eventId } = useParams<{ id: string }>();
+    const { id: eventIdParam } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { isAuthenticated, user } = useAuth(); 
-    const { whitelist, loading: whitelistLoading, error: whitelistError } = useWhitelist(eventId);
+    const { user } = useAuth(); 
     
-    const [attendance, setAttendance] = useState<Record<string, boolean>>({});
+    const eventIdAsNumber = eventIdParam ? parseInt(eventIdParam, 10) : null; 
+    const { whitelist, loading: whitelistLoading, error: whitelistError } = useWhitelist(eventIdParam || ""); 
+    
     const [uploadedCertificates, setUploadedCertificates] = useState<Record<string, { 
-        filePath: string; tokenURI?: string; uploadedEventId?: string; 
+        filePath: string; tokenURI?: string; event_id_from_upload?: string; 
         certificateId?: string; apiResponse?: any;
     }>>({});
     const [mintedCertificates, setMintedCertificates] = useState<Record<string, { 
@@ -145,13 +172,13 @@ export default function ManageEvent() {
     const [uploadModalError, setUploadModalError] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
 
-    const loadEventData = async () => {
-        if (!eventId) {
-            setPageError("Event ID is missing."); setLoadingPage(false); return;
+    const loadEventData = useCallback(async () => {
+        if (!eventIdAsNumber) {
+            setPageError("Event ID is invalid."); setLoadingPage(false); return;
         }
         setLoadingPage(true);
         try {
-            const data = await getEventData(eventId);
+            const data = await getEventData(eventIdAsNumber);
             setEvent(data); setPageError(null);
         } catch (err) {
             const msg = err instanceof Error ? err.message : "Error fetching event data.";
@@ -159,50 +186,63 @@ export default function ManageEvent() {
         } finally {
             setLoadingPage(false);
         }
-    };
+    }, [eventIdAsNumber]); 
 
     useEffect(() => {
-        if (eventId) loadEventData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [eventId]);
+        if (eventIdAsNumber) {
+            loadEventData();
+        }
+    }, [eventIdAsNumber, loadEventData]);
 
-    const handleActivateMinting = async () => {
-        if (!event || !eventId || !user || !user.walletAddress) { // Memastikan user dan user.token ada
-            toast.error("Event data or authentication token is missing.");
-            return;
+    const handleChangeEventStatus = async (newStatus: EventStatus) => {
+        if (!event || !eventIdAsNumber || !user?.walletAddress) {
+            toast.error("Event data or authentication is missing to change status."); return;
         }
         
-        const originalMintingStatus = event.minting_active;
-        const newMintingStatus = !originalMintingStatus;
+        const currentStatus = event.status;
 
-        setEvent(prev => prev ? { ...prev, minting_active: newMintingStatus } : null);
+        if (currentStatus === 'canceled') {
+            toast("Event is canceled and its status cannot be changed.", { icon: <Info className="text-blue-500"/> });
+            return;
+        }
+         if (currentStatus === 'ended' && newStatus !== 'minting') {
+            toast("Event has ended. Only re-opening for minting is allowed.", { icon: <Info className="text-blue-500"/> });
+            return;
+        }
+        if (newStatus === 'minting') {
+            if (!['upcoming', 'ongoing', 'ended'].includes(currentStatus)) {
+                toast.error(`Cannot start/re-open minting period from current status: ${currentStatus}.`);
+                return;
+            }
+        } else if (newStatus === 'ended') {
+            if (currentStatus !== 'minting') {
+                toast.error(`Event must be in 'minting' status to be marked as 'ended'. Current: ${currentStatus}`);
+                return;
+            }
+        }
+    
+        const originalStatus = event.status;
+        setEvent(prev => prev ? { ...prev, status: newStatus } : null); 
         setIsProcessing(true);
-
         try {
-            const result = await toggleMintingStatusAPI(eventId, newMintingStatus, user.walletAddress); // Menggunakan user.walletAddress
-            toast.success(result.message || `Minting status updated.`);
-            loadEventData(); 
+            const result = await updateEventStatusAPI(eventIdAsNumber, newStatus, user.walletAddress);
+            toast.success(result.message || `Event status successfully updated to ${newStatus}.`);
+            setEvent(result.event); 
         } catch (err) {
-            toast.error(err instanceof Error ? err.message : "Failed to update minting status.");
-            setEvent(prev => prev ? { ...prev, minting_active: originalMintingStatus } : null);
+            toast.error(err instanceof Error ? err.message : "Failed to update event status.");
+            setEvent(prev => prev ? { ...prev, status: originalStatus } : null); 
         } finally {
             setIsProcessing(false);
         }
     };
-
+    
     const handleConfirmCancel = async () => {
-        setIsCancelModalOpen(false);
-        if (!eventId || !isAuthenticated) { 
-            toast.error("Authentication required."); return; 
+        if (!eventIdAsNumber || !user?.walletAddress) { 
+             toast.error("Authentication required to cancel event."); return; 
         }
-        // Jika API cancel memerlukan walletAddress, pastikan user.walletAddress ada
-        if (true && !user?.walletAddress) { // Ganti 'true' dengan kondisi nyata jika API cancel perlu walletAddress
-             toast.error("Authentication walletAddress is missing for canceling event."); return;
-        }
-
         setIsProcessing(true);
         try {
-            const result = await cancelEventAPI(eventId, user?.walletAddress); // Menggunakan user.walletAddress
+            const result = await cancelEventAPI(eventIdAsNumber, user.walletAddress); 
             toast.success(result.message || "Event successfully canceled.");
             loadEventData(); 
         } catch (err) {
@@ -212,58 +252,52 @@ export default function ManageEvent() {
         }
     };
 
-    const handleMarkPresent = (userId: string) => {
-        setAttendance((prev) => ({ ...prev, [userId]: true }));
-        toast.success("User marked as present.");
+    const isUserConsideredPresent = (whEntry: WhitelistEntry): boolean => {
+        if (!event) return false;
+        if (whEntry.attendance === true) return true;
+        if (whEntry.attendance === false) return false;
+        const canUploadBasedOnEventStatus: Event['status'][] = ['ongoing', 'minting', 'ended'];
+        return canUploadBasedOnEventStatus.includes(event.status);
     };
 
     const openUploadModal = (userForUpload: WhitelistEntry) => {
-        if (!eventId) return;
         setUploadTargetUser(userForUpload);
         setFileToUpload(null); setUploadModalError(null); setIsUploadModalOpen(true);
     };
-
     const closeUploadModal = () => {
         setIsUploadModalOpen(false); setUploadTargetUser(null);
         setFileToUpload(null); setUploadModalError(null);
     };
-
     const handleFileSelectedForUpload = (file: File | null) => {
         setFileToUpload(file); setUploadModalError(null); 
     };
 
     const handleConfirmUpload = async () => {
-        if (!fileToUpload || !uploadTargetUser || !eventId) {
-            setUploadModalError("File, target user, or event ID is missing."); return;
+        if (!fileToUpload || !uploadTargetUser || !eventIdAsNumber) {
+            setUploadModalError("File, target user, or Event ID is missing."); return;
         }
         if (!user || !user.walletAddress || !user.walletAddress) { 
-            setUploadModalError("Vendor information or authentication walletAddress missing. Please log in again."); return;
+            setUploadModalError("Vendor authentication missing. Please log in."); return;
         }
         if (!event || event.status === 'canceled') {
             setUploadModalError("Cannot upload for a canceled event."); return;
         }
-        if (!attendance[uploadTargetUser.id]) {
-            setUploadModalError(`${uploadTargetUser.name} must be marked as present first.`); return;
+        if (!isUserConsideredPresent(uploadTargetUser)) {
+            setUploadModalError(`${uploadTargetUser.name} is not considered present or event is not in a stage for uploads.`); return;
         }
 
         setIsProcessing(true); setUploadModalError(null);
-        
         try {
             const result = await uploadCertificateImageAPI(
                 fileToUpload, uploadTargetUser.name, 
-                `Certificate for ${uploadTargetUser.name} - Event: ${event?.title || eventId}`,
-                uploadTargetUser.walletAddress, eventId, user.walletAddress
+                `Certificate for ${uploadTargetUser.name} - Event: ${event?.title || eventIdAsNumber}`,
+                uploadTargetUser.walletAddress, eventIdAsNumber, user.walletAddress
             );
             setUploadedCertificates((prev) => ({ 
-                ...prev, 
-                [uploadTargetUser.id]: { 
-                    filePath: result.filePath || "unknown_path", 
-                    tokenURI: result.tokenURI, // <<< PASTIKAN INI DISIMPAN
-                    uploadedEventId: result.event_id, 
-                    certificateId: result.certificateId,
-                    apiResponse: result 
-                } 
-            }));
+                ...prev, [uploadTargetUser.id]: { 
+                    filePath: result.filePath || "unknown_path", tokenURI: result.tokenURI, 
+                    event_id_from_upload: result.event_id_from_upload, certificateId: result.certificateId,
+                    apiResponse: result } }));
             toast.success(result.message || `Certificate for ${uploadTargetUser.name} uploaded.`);
             closeUploadModal();
         } catch (err) {
@@ -282,27 +316,25 @@ export default function ManageEvent() {
         if (!certificateData || !certificateData.tokenURI) {
             toast.error("Certificate data or TokenURI is missing."); return;
         }
-        if (!event?.minting_active) {
-            toast.error("Minting is not active for this event."); return;
+        if (!event) { toast.error("Event data not loaded."); return; }
+        
+        if (event.status !== 'minting') {
+            toast.error(`Minting is only allowed when the event is in 'minting' period. Current status: ${event.status}`); return;
         }
-        const eventIdForMinting = certificateData.uploadedEventId || eventId; 
-        if (!eventIdForMinting) {
-            toast.error("Event ID for minting is missing."); return;
-        }
-        if (!user || !user.walletAddress) { // Memastikan user dan user.token ada
-            toast.error("Authentication token missing. Please log in again."); return;
-        }
+
+        const eventIdForMint = certificateData.event_id_from_upload || String(eventIdAsNumber); 
+        if (!eventIdForMint) { toast.error("Event ID for minting is missing."); return; }
+        if (!user || !user.walletAddress) { toast.error("Authentication token missing."); return; }
 
         setIsProcessing(true);
         try {
             const mintResult = await mintCertificateAPI(
                 targetUser.walletAddress, certificateData.tokenURI, 
-                String(eventIdForMinting), user.walletAddress // Menggunakan user.token
+                String(eventIdForMint), user.walletAddress
             );
             setMintedCertificates((prev) => ({
                 ...prev, [userId]: { 
-                    transactionHash: mintResult.transactionHash, apiResponse: mintResult
-                }
+                    transactionHash: mintResult.transactionHash, apiResponse: mintResult }
             }));
             toast.success(mintResult.message || `Certificate for ${targetUser.name} minted!`);
         } catch (err) {
@@ -312,14 +344,15 @@ export default function ManageEvent() {
         }
     };
 
-    const getUserStatus = (userId: string) => {
+    const getUserStatus = (whEntry: WhitelistEntry): React.ReactNode => {
+        const userId = whEntry.id;
         if (mintedCertificates[userId]) {
             return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 mr-1" />Minted</span>;
         }
         if (uploadedCertificates[userId]?.tokenURI) {
             return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800"><Sparkles className="h-3 w-3 mr-1" />Ready to Mint</span>;
         }
-        if (attendance[userId]) {
+        if (isUserConsideredPresent(whEntry)) {
             return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"><Users className="h-3 w-3 mr-1" />Present</span>;
         }
         return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Absent</span>;
@@ -334,7 +367,7 @@ export default function ManageEvent() {
             <div className="min-h-screen flex flex-col items-center justify-center text-center p-4">
                 <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
                 <h2 className="text-xl font-bold text-red-600">Failed to load data</h2>
-                <p className="text-gray-600">{pageError || whitelistError}</p>
+                <p className="text-gray-600">{pageError || String(whitelistError)}</p>
                 <Link to="/vendor/dashboard" className="mt-6 text-blue-600 hover:underline">Back to Dashboard</Link>
             </div>
         );
@@ -344,15 +377,29 @@ export default function ManageEvent() {
              <div className="min-h-screen flex flex-col items-center justify-center text-center p-4">
                 <AlertCircle className="h-12 w-12 text-yellow-500 mb-4" />
                 <h2 className="text-xl font-bold text-yellow-600">Event Not Found</h2>
-                <p className="text-gray-600">The requested event could not be found or loaded.</p>
+                <p className="text-gray-600">The requested event (ID: {eventIdParam}) could not be found or loaded.</p>
                 <Link to="/vendor/dashboard" className="mt-6 text-blue-600 hover:underline">Back to Dashboard</Link>
             </div>
         );
     }
 
-    const registrationRate = event.max_attendees > 0 ? Math.round((event.attendees / event.max_attendees) * 100) : 0;
-    const spotsRemaining = event.max_attendees > 0 ? event.max_attendees - event.attendees : Infinity;
+    const registrationRate = event.max_attendees > 0 ? Math.round((event.whitelisted / event.max_attendees) * 100) : 0;
+    const spotsRemaining = event.max_attendees > 0 ? event.max_attendees - event.whitelisted : Infinity;
     const isEventCanceled = event.status === 'canceled';
+    const isEventEnded = event.status === 'ended';
+    const isEventInMintingPeriod = event.status === 'minting';
+
+    const canStartOrReopenMinting = (event.status === 'ongoing' || event.status === 'upcoming' || event.status === 'ended') && !isEventCanceled;
+    const canEndMinting = isEventInMintingPeriod && !isEventCanceled;
+
+    const statusToColorMap: Record<EventStatus, string> = {
+        upcoming: 'bg-blue-100 text-blue-800',
+        ongoing: 'bg-green-100 text-green-800',
+        minting: 'bg-indigo-100 text-indigo-800',
+        ended: 'bg-gray-200 text-gray-700',
+        canceled: 'bg-red-100 text-red-800',
+    };
+    const eventStatusColor = statusToColorMap[event.status] || 'bg-gray-100 text-gray-800';
 
     return (
         <>
@@ -364,8 +411,8 @@ export default function ManageEvent() {
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                             <div><h1 className="text-3xl font-bold text-gray-900">Manage Event</h1><p className="text-gray-600 mt-1">{event.title}</p></div>
                             <div className="mt-4 md:mt-0 flex items-center space-x-3">
-                                <button onClick={() => navigate(`/vendor/event/${eventId}/edit`)} className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold disabled:bg-blue-300" disabled={isEventCanceled || isProcessing}><Edit className="h-4 w-4" /><span>Edit</span></button>
-                                <button onClick={() => setIsCancelModalOpen(true)} className="inline-flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold disabled:bg-red-300" disabled={isEventCanceled || isProcessing}><XCircle className="h-4 w-4" /><span>Cancel Event</span></button>
+                                <button onClick={() => navigate(`/vendor/event/${event.id}/edit`)} className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold disabled:bg-blue-300" disabled={isEventCanceled || isProcessing}><Edit className="h-4 w-4" /><span>Edit</span></button>
+                                <button onClick={() => setIsCancelModalOpen(true)} className="inline-flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold disabled:bg-red-300" disabled={isEventCanceled || isProcessing || isEventEnded}><XCircle className="h-4 w-4" /><span>Cancel Event</span></button>
                             </div>
                         </div>
                     </div>
@@ -378,8 +425,9 @@ export default function ManageEvent() {
                                 <div className="space-y-4">
                                     <div className="flex items-center space-x-3"><Calendar className="h-5 w-5 text-gray-400" /><div><p className="font-semibold text-gray-900">Date</p><p className="text-gray-600">{new Date(event.start_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p></div></div>
                                     <div className="flex items-center space-x-3"><MapPin className="h-5 w-5 text-gray-400" /><div><p className="font-semibold text-gray-900">Location</p><p className="text-gray-600">{event.location}</p></div></div>
-                                    <div className="flex items-center space-x-3"><Users className="h-5 w-5 text-gray-400" /><div><p className="font-semibold text-gray-900">Attendees</p><p className="text-gray-600">{event.attendees}/{event.max_attendees > 0 ? event.max_attendees : 'Unlimited'} registered</p></div></div>
-                                    <div className="flex items-center space-x-3"><Award className="h-5 w-5 text-gray-400" /><div><p className="font-semibold text-gray-900">Certificates</p><p className="text-gray-600">{Object.keys(mintedCertificates).length} minted of {Object.keys(uploadedCertificates).length} prepared</p></div></div>
+                                    <div className="flex items-center space-x-3"><Users className="h-5 w-5 text-gray-400" /><div><p className="font-semibold text-gray-900">Registered</p><p className="text-gray-600">{event.whitelisted}/{event.max_attendees > 0 ? event.max_attendees : 'Unlimited'} registered</p></div></div>
+                                    <div className="flex items-center space-x-3"><Users className="h-5 w-5 text-gray-400" /><div><p className="font-semibold text-gray-900">Attendees</p><p className="text-gray-600">{event.attendees}/{event.max_attendees > 0 ? event.max_attendees : 'Unlimited'} Attend</p></div></div>
+                                    <div className="flex items-center space-x-3"><Award className="h-5 w-5 text-gray-400" /><div><p className="font-semibold text-gray-900">Certificates</p><p className="text-gray-600">{event.certificates_minted ?? Object.keys(mintedCertificates).length} minted of {Object.keys(uploadedCertificates).length} prepared</p></div></div>
                                 </div>
                                 <div className="border-t border-gray-200 pt-4 mt-6"><h3 className="font-semibold text-gray-900 mb-2">Description</h3><p className="text-gray-700 leading-relaxed">{event.description}</p></div>
                             </div>
@@ -387,26 +435,58 @@ export default function ManageEvent() {
                                 <h2 className="text-xl font-bold text-gray-900 mb-4">Event Image</h2>
                                 {event.picture ? (
                                     <div className="relative h-48 rounded-xl overflow-hidden"><img src={`${API_IMAGE_BASE_URL}/${event.picture}`} alt={event.title} className="w-full h-full object-cover"/></div>
-                                ) : (
-                                    <p className="text-gray-500">No image available for this event.</p>
-                                )}
+                                ) : ( <p className="text-gray-500">No image available.</p> )}
                             </div>
                         </div>
                         {/* Right Sidebar */}
                         <div className="space-y-6">
                             <div className="bg-white rounded-2xl shadow-lg p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Event Status</h3>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Event Control</h3>
                                 <div className="space-y-4">
-                                    <div><span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${event.status === 'upcoming' ? 'bg-blue-100 text-blue-800' : event.status === 'canceled' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>{event.status.charAt(0).toUpperCase() + event.status.slice(1)}</span></div>
-                                    <div><p className="text-sm font-medium text-gray-700 mb-2">Certificate Minting</p><div className="flex items-center justify-between"><span className={`text-sm ${event.minting_active ? 'text-green-600' : 'text-gray-600'}`}>{event.minting_active ? 'Active' : 'Inactive'}</span><button onClick={handleActivateMinting} className={`inline-flex items-center space-x-1 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${event.minting_active ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`} disabled={isEventCanceled || isProcessing}>{event.minting_active ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}<span>{event.minting_active ? 'Deactivate' : 'Activate'}</span></button></div></div>
+                                    <div>Current Status: <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${eventStatusColor}`}>
+                                        {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+                                    </span></div>
+                                    
+                                    {canStartOrReopenMinting && (
+                                        <button 
+                                            onClick={() => handleChangeEventStatus('minting')} 
+                                            className="w-full inline-flex items-center justify-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold disabled:bg-purple-300"
+                                            disabled={isProcessing}>
+                                            <Play className="h-4 w-4" />
+                                            <span>{event.status === 'ended' ? 'Re-open Minting Period' : 'Start Minting Period'}</span>
+                                        </button>
+                                    )}
+                                    {canEndMinting && (
+                                        <button 
+                                            onClick={() => handleChangeEventStatus('ended')} 
+                                            className="w-full inline-flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold disabled:bg-red-300"
+                                            disabled={isProcessing}>
+                                            <StopCircle className="h-4 w-4" />
+                                            <span>End Minting Period</span>
+                                        </button>
+                                    )}
+                                    {isEventEnded && !canStartOrReopenMinting && ( 
+                                        <p className="text-sm text-gray-600 p-2 bg-gray-100 rounded-md text-center">
+                                            This event has ended.{' '}
+                                            {/* Logika untuk menampilkan tombol re-open hanya jika kondisi lain terpenuhi, misal tidak dibatalkan */}
+                                            {!isEventCanceled && <button onClick={() => handleChangeEventStatus('minting')} className="text-purple-600 hover:underline text-xs">(Re-open Minting?)</button>}
+                                        </p> 
+                                    )}
+                                    {isEventCanceled && ( <p className="text-sm text-red-600 p-2 bg-red-50 rounded-md text-center">This event is canceled.</p> )}
+                                    {!canStartOrReopenMinting && !canEndMinting && !isEventEnded && !isEventCanceled && event.status !== 'minting' && (
+                                        <p className="text-sm text-gray-500 p-2 text-center">
+                                            Event is currently {event.status}. 
+                                            {(event.status === 'upcoming' || event.status === 'ongoing') ? ' You can start the minting period when ready.' : 'No manual status actions available at this stage.'}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
-                            <div className="bg-white rounded-2xl shadow-lg p-6">
+                             <div className="bg-white rounded-2xl shadow-lg p-6">
                                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
                                 <div className="space-y-3">
-                                    <Link to={`/vendor/event/${event.id}/whitelist`} className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 py-3 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2"><Users className="h-4 w-4" /><span>View Whitelist ({whitelist.length || 0})</span></Link>
-                                    <Link to={`/vendor/event/${event.id}/minted`} className="w-full bg-green-50 hover:bg-green-100 text-green-700 py-3 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2"><Award className="h-4 w-4" /><span>View Minted Certificates</span></Link>
-                                    <button onClick={() => navigate(`/vendor/event/${eventId}/metadata`)} className="w-full bg-purple-50 hover:bg-purple-100 text-purple-700 py-3 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2"><Settings className="h-4 w-4" /><span>Edit Metadata</span></button>
+                                    <Link to={`/vendor/event/${event.id}/whitelist`} className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 py-3 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2"><Users className="h-4 w-4" /><span>View Whitelist ({event.whitelisted ?? whitelist.length ?? 0})</span></Link>
+                                    <Link to={`/vendor/event/${event.id}/minted-certificates`} className="w-full bg-green-50 hover:bg-green-100 text-green-700 py-3 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2"><Award className="h-4 w-4" /><span>View Minted Certificates</span></Link>
+                                    <button onClick={() => navigate(`/vendor/event/${event.id}/metadata`)} className="w-full bg-purple-50 hover:bg-purple-100 text-purple-700 py-3 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2"><Settings className="h-4 w-4" /><span>Edit Metadata</span></button>
                                 </div>
                             </div>
                             <div className="bg-white rounded-2xl shadow-lg p-6">
@@ -420,87 +500,107 @@ export default function ManageEvent() {
                         </div>
                     </div>
 
-                    {/* Attendance Table */}
+                    {/* Participant Certificates Table */}
                     <div className="bg-white rounded-2xl shadow-lg p-6 w-full mt-8 overflow-x-auto">
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">Attendance & Minting</h2>
-                        {whitelistLoading ? (
-                            <div className="text-center py-8"><Loader2 className="h-8 w-8 animate-spin text-purple-600 mx-auto" /> Loading whitelist...</div>
-                        ) : whitelist.length === 0 && !whitelistError ? (
-                            <p className="text-center text-gray-500 py-8">No users on the whitelist for this event yet.</p>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">Participant Certificates</h2>
+                        {whitelistLoading ? ( <div className="text-center py-8"><Loader2 className="h-8 w-8 animate-spin text-purple-600 mx-auto" /> Loading participants...</div>
+                        ) : whitelist.length === 0 && !whitelistError ? ( <p className="text-center text-gray-500 py-8">No participants on the whitelist for this event yet.</p>
                         ) : (
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Wallet</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Certificate Status</th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {whitelist.map((whUser) => (
-                                        <tr key={whUser.id}>
-                                            <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm font-medium text-gray-900">{whUser.name}</div><div className="text-sm text-gray-500">{whUser.email}</div></td>
-                                            <td className="px-6 py-4 whitespace-nowrap"><div className="font-mono text-xs text-gray-600">{whUser.walletAddress}</div></td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{getUserStatus(whUser.id)}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                <div className="flex items-center space-x-2">
-                                                    <button title="Mark as Present" onClick={() => handleMarkPresent(whUser.id)} disabled={attendance[whUser.id] || isEventCanceled || isProcessing} className="p-2 rounded-full text-green-600 bg-green-100 hover:bg-green-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"><CheckCircle className="h-4 w-4" /></button>
-                                                    <button title="Upload Certificate" onClick={() => openUploadModal(whUser)} disabled={!attendance[whUser.id] || !!uploadedCertificates[whUser.id]?.tokenURI || isEventCanceled || isProcessing} className="p-2 rounded-full text-blue-600 bg-blue-100 hover:bg-blue-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"><UploadCloud className="h-4 w-4" /></button>
-                                                    <button 
-                                                        title="Mint Certificate" 
-                                                        onClick={() => handleMintCertificate(whUser.id)} 
-                                                        disabled={
-                                                            !uploadedCertificates[whUser.id]?.tokenURI || 
-                                                            !!mintedCertificates[whUser.id] ||            
-                                                            isEventCanceled ||                             
-                                                            !event.minting_active ||                       
-                                                            isProcessing                                   
-                                                        } 
-                                                        className="p-2 rounded-full text-purple-600 bg-purple-100 hover:bg-purple-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
-                                                    >
-                                                        <Sparkles className="h-4 w-4" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {whitelist.map((whUser) => {
+                                        const userIsPresent = isUserConsideredPresent(whUser);
+                                        const certificateUploaded = !!uploadedCertificates[whUser.id]?.tokenURI;
+                                        const certificateMinted = !!mintedCertificates[whUser.id];
+                                        
+                                        const canUpload = userIsPresent && !certificateUploaded && 
+                                                        !['canceled', 'upcoming'].includes(event.status) && 
+                                                        !isProcessing;
+                                        const canMint = certificateUploaded && !certificateMinted && 
+                                                        event.status === 'minting' &&
+                                                        !isEventCanceled && !isProcessing;
+
+                                        return (
+                                            <tr key={whUser.id}>
+                                                <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm font-medium text-gray-900">{whUser.name}</div><div className="text-sm text-gray-500">{whUser.email}</div></td>
+                                                <td className="px-6 py-4 whitespace-nowrap"><div className="font-mono text-xs text-gray-600">{whUser.walletAddress}</div></td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{getUserStatus(whUser)}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                    <div className="flex items-center space-x-2">
+                                                        <button 
+                                                            title="Upload Certificate" 
+                                                            onClick={() => openUploadModal(whUser)} 
+                                                            disabled={!canUpload} 
+                                                            className="p-2 rounded-full text-blue-600 bg-blue-100 hover:bg-blue-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors">
+                                                            <UploadCloud className="h-4 w-4" />
+                                                        </button>
+                                                        <button 
+                                                            title="Mint Certificate" 
+                                                            onClick={() => handleMintCertificate(whUser.id)} 
+                                                            disabled={!canMint} 
+                                                            className="p-2 rounded-full text-purple-600 bg-purple-100 hover:bg-purple-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors">
+                                                            <Sparkles className="h-4 w-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         )}
+                         {/* Menambahkan pesan error untuk whitelist jika ada */}
+                         {!whitelistLoading && whitelistError && ( <p className="text-center text-red-500 py-8">Error loading whitelist: {String(whitelistError)}</p> )}
                     </div>
                 </div>
             </div>
 
-            <ConfirmationModal
-                isOpen={isCancelModalOpen}
-                onClose={() => setIsCancelModalOpen(false)}
-                onConfirm={handleConfirmCancel}
-                title="Cancel Event"
-                message={`Are you sure you want to cancel "${event.title}"?`}
+            <ConfirmationModal 
+                isOpen={isCancelModalOpen} 
+                onClose={() => setIsCancelModalOpen(false)} 
+                onConfirm={handleConfirmCancel} 
+                title="Cancel Event" 
+                message={`Are you sure you want to cancel "${event?.title ?? 'this event'}"? This action cannot be undone.`}
             />
 
-            {isUploadModalOpen && uploadTargetUser && (
-                <Modal isOpen={isUploadModalOpen} onClose={closeUploadModal} title={`Upload Certificate for ${uploadTargetUser.name}`}>
-                    <div className="mt-4">
-                        <FileUploadForm
-                            onFileSelect={handleFileSelectedForUpload}
-                            label="Drag & drop certificate image, or click to select"
-                            subText="PNG, JPG (Max 5MB)"
-                            allowedFileTypes="image/png,image/jpeg"
-                            maxFileSizeMB={5}
-                            currentFile={fileToUpload}
-                            error={uploadModalError}
-                        />
-                        <div className="mt-6 flex justify-end space-x-3">
-                            <button type="button" onClick={closeUploadModal} disabled={isProcessing} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500  disabled:bg-gray-200">Cancel</button>
-                            <button type="button" onClick={handleConfirmUpload} disabled={!fileToUpload || isProcessing || isEventCanceled || !attendance[uploadTargetUser.id]} className="px-4 py-2 text-sm font-medium text-white bg-purple-600 border border-transparent rounded-md shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:bg-purple-300">
-                                {isProcessing ? <Loader2 className="h-4 w-4 animate-spin mr-2 inline" /> : null}
-                                {isProcessing ? 'Processing...' : 'Upload & Prepare'}
-                            </button>
-                        </div>
-                    </div>
-                </Modal>
+            {isUploadModalOpen && uploadTargetUser && ( 
+                <Modal 
+                    isOpen={isUploadModalOpen} 
+                    onClose={closeUploadModal} 
+                    title={`Upload Certificate for ${uploadTargetUser.name}`}
+                > 
+                    <div className="mt-4"> 
+                        <FileUploadForm 
+                            onFileSelect={handleFileSelectedForUpload} 
+                            label="Drag & drop certificate image, or click to select" 
+                            subText="PNG, JPG (Max 5MB)" 
+                            allowedFileTypes="image/png,image/jpeg" 
+                            maxFileSizeMB={5} 
+                            currentFile={fileToUpload} 
+                            error={uploadModalError} 
+                        /> 
+                        <div className="mt-6 flex justify-end space-x-3"> 
+                            <button type="button" onClick={closeUploadModal} disabled={isProcessing} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500  disabled:bg-gray-200">Cancel</button> 
+                            <button 
+                                type="button" 
+                                onClick={handleConfirmUpload} 
+                                disabled={!fileToUpload || isProcessing || isEventCanceled || (event && uploadTargetUser && !isUserConsideredPresent(uploadTargetUser)) } // Pastikan uploadTargetUser ada sebelum memanggil isUserConsideredPresent
+                                className="px-4 py-2 text-sm font-medium text-white bg-purple-600 border border-transparent rounded-md shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:bg-purple-300"
+                            > 
+                                {isProcessing ? <Loader2 className="h-4 w-4 animate-spin mr-2 inline" /> : null} 
+                                {isProcessing ? 'Processing...' : 'Upload & Prepare'} 
+                            </button> 
+                        </div> 
+                    </div> 
+                </Modal> 
             )}
         </>
     );

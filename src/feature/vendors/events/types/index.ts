@@ -22,6 +22,12 @@ export interface User {
  * Naming convention uses snake_case to directly match the API response,
  * which simplifies data handling and debugging.
  */
+export type EventStatus = 
+  | 'upcoming' 
+  | 'ongoing' 
+  | 'minting' 
+  | 'ended' 
+  | 'canceled';
 export interface Event {
   id: number;
   title: string;
@@ -38,7 +44,7 @@ export interface Event {
   end_date: string;
   created_at: string;
   updated_at: string;
-  status: 'upcoming' | 'ongoing' | 'ended' | 'canceled' | 'minting';
+  status: EventStatus; // ✅ Menggunakan tipe data yang sudah didefinisikan
 
   // --- Numeric Data & Stats ---
   // ✅ Menggunakan snake_case agar konsisten

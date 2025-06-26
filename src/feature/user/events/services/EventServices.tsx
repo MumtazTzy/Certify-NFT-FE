@@ -23,7 +23,7 @@ export async function getEvents(): Promise<Event[]> {
     title: item.title || 'Untitled',
     date: item.start_date || new Date().toISOString(),
     location: item.location || 'Unknown',
-    status: item.status as 'upcoming' | 'minting' | 'closed' || 'upcoming',
+    status: item.status as 'upcoming' | 'ongoing' | 'minting' | 'closed' || 'upcoming',
     whitelisted: item.whitelisted || 0,
     maxAttendees: item.maxattendees || 100,
     organizer: item.organizer || 'Unknown',
