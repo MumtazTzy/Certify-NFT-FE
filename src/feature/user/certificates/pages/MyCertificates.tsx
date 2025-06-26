@@ -143,7 +143,7 @@ export default function MyCertificatesPage() {
               } catch {}
               return (
                 <div key={cert.id} className="flex flex-col items-center">
-                  <div className="bg-white p-3 rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition mb-2 w-full flex flex-col items-center">
+                  <div className="bg-white p-3 rounded-3xl border border-gray-200 shadow-sm hover:shadow-lg transition mb-2 w-full flex flex-col items-center">
                     {urlCertificate ? (
                       <img
                         src={urlCertificate}
