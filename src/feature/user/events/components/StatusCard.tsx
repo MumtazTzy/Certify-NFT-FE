@@ -1,9 +1,9 @@
 // src/components/StatusCard.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, CheckCircle, XCircle, Ban, Award, UserCheck, Loader2 } from 'lucide-react'; // Menambahkan Ban, Award, UserCheck, Loader2
-import { useCountdown } from '../hooks/useCountdown'; // Asumsi path hook benar
-import { Event } from '../types'; // Asumsi path tipe benar
+import { Clock, CheckCircle, XCircle, Ban, Award, UserCheck, Loader2, Play, Calendar, AlertTriangle } from 'lucide-react';
+import { useCountdown } from '../hooks/useCountdown';
+import { Event } from '../types';
 
 // Sub-komponen untuk menampilkan countdown timer (TETAP SAMA)
 interface CountdownTimerProps {
@@ -16,12 +16,12 @@ interface CountdownTimerProps {
 }
 
 const CountdownTimer: React.FC<CountdownTimerProps> = ({ timeLeft }) => (
-  <div className="grid grid-cols-4 gap-2 sm:gap-3 mb-6"> {/* Mengurangi gap dan mb */}
+  <div className="grid grid-cols-4 gap-3 mb-6">
     {Object.entries(timeLeft).map(([unit, value]) => (
       <div key={unit} className="flex flex-col items-center">
-        <div className="bg-white rounded-xl shadow-md border border-blue-100 w-full px-2 py-3 sm:px-4 sm:py-4 flex flex-col items-center justify-center">
-          <div className="text-xl sm:text-2xl font-extrabold text-blue-600">{String(value).padStart(2, '0')}</div>
-          <div className="mt-1 text-xs font-semibold text-blue-500 tracking-wide uppercase">{unit}</div> {/* Warna teks unit disesuaikan */}
+        <div className="bg-white rounded-xl shadow-sm border border-blue-100 w-full px-3 py-4 flex flex-col items-center justify-center">
+          <div className="text-2xl font-bold text-blue-600">{String(value).padStart(2, '0')}</div>
+          <div className="mt-1 text-xs font-medium text-blue-500 tracking-wide uppercase">{unit}</div>
         </div>
       </div>
     ))}
@@ -64,15 +64,67 @@ const StatusCard: React.FC<StatusCardProps> = ({
     }
   }
 
+  const getStatusConfig = (status: string) => {
+    switch (status) {
+      case 'upcoming':
+        return {
+          bgColor: 'bg-blue-50',
+          borderColor: 'border-blue-200',
+          textColor: 'text-blue-800',
+          icon: <Clock className="h-5 w-5" />,
+          title: 'Event Starts In'
+        };
+      case 'ongoing':
+        return {
+          bgColor: 'bg-green-50',
+          borderColor: 'border-green-200',
+          textColor: 'text-green-800',
+          icon: <Play className="h-5 w-5" />,
+          title: 'Event is Live!'
+        };
+      case 'minting':
+        return {
+          bgColor: 'bg-purple-50',
+          borderColor: 'border-purple-200',
+          textColor: 'text-purple-800',
+          icon: <Award className="h-5 w-5" />,
+          title: 'Certificate Minting Open'
+        };
+      case 'ended':
+        return {
+          bgColor: 'bg-gray-50',
+          borderColor: 'border-gray-200',
+          textColor: 'text-gray-800',
+          icon: <CheckCircle className="h-5 w-5" />,
+          title: 'Event Concluded'
+        };
+      case 'canceled':
+        return {
+          bgColor: 'bg-red-50',
+          borderColor: 'border-red-200',
+          textColor: 'text-red-800',
+          icon: <Ban className="h-5 w-5" />,
+          title: 'Event Canceled'
+        };
+      default:
+        return {
+          bgColor: 'bg-gray-50',
+          borderColor: 'border-gray-200',
+          textColor: 'text-gray-800',
+          icon: <Calendar className="h-5 w-5" />,
+          title: 'Event Status'
+        };
+    }
+  };
 
   // Helper untuk render tombol aksi utama
   const renderPrimaryAction = () => {
     // 1. Vendor tidak bisa ikut
     if (userRole === 'vendors') {
       return (
-        <div className="w-full bg-yellow-100 text-yellow-800 py-3 px-4 rounded-lg font-semibold text-center mt-2 text-sm flex items-center justify-center">
+        <div className="w-full bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 text-yellow-800 py-4 px-4 rounded-xl font-medium text-center text-sm flex items-center justify-center">
           <UserCheck className="h-5 w-5 mr-2" />
-          Vendors manage events, not participate.
+          Vendors manage events, not participate
         </div>
       );
     }
@@ -80,7 +132,7 @@ const StatusCard: React.FC<StatusCardProps> = ({
     // 2. Event dibatalkan
     if (currentEventState === 'canceled') {
       return (
-        <div className="w-full bg-red-100 text-red-700 py-3 px-4 rounded-lg font-semibold text-center mt-2 text-sm flex items-center justify-center">
+        <div className="w-full bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 text-red-700 py-4 px-4 rounded-xl font-medium text-center text-sm flex items-center justify-center">
           <Ban className="h-5 w-5 mr-2" />
           Event Canceled
         </div>
@@ -92,16 +144,22 @@ const StatusCard: React.FC<StatusCardProps> = ({
       return isWhitelisted ? (
         <Link
           to={`/user/dashboard`} // Pastikan path ini benar
-          className="w-full inline-block bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-semibold text-center transition-all transform hover:scale-105 text-base"
+          className="w-full inline-block bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-4 px-4 rounded-xl font-semibold text-center transition-all transform hover:scale-105 text-base shadow-lg"
         >
-          Attend Event Now
+          <div className="flex items-center justify-center space-x-2">
+            <Play className="h-5 w-5" />
+            <span>Attend Event Now</span>
+          </div>
         </Link>
       ) : (
         <Link
-            to={`/whitelist/${event.id}`} // Atau ke halaman detail event jika whitelist sudah ditutup
-            className="w-full inline-block bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold text-center transition-all transform hover:scale-105 text-base"
+          to={`/whitelist/${event.id}`} // Atau ke halaman detail event jika whitelist sudah ditutup
+          className="w-full inline-block bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 px-4 rounded-xl font-semibold text-center transition-all transform hover:scale-105 text-base shadow-lg"
         >
-            Join Whitelist to Attend
+          <div className="flex items-center justify-center space-x-2">
+            <UserCheck className="h-5 w-5" />
+            <span>Join Whitelist to Attend</span>
+          </div>
         </Link>
       );
     }
@@ -109,8 +167,8 @@ const StatusCard: React.FC<StatusCardProps> = ({
     // 4. Event akan datang (upcoming)
     if (currentEventState === 'upcoming') {
       return isWhitelisted ? (
-        <div className="text-center space-y-2">
-          <div className="bg-green-100 text-green-700 py-3 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2 text-sm">
+        <div className="text-center space-y-3">
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 text-green-700 py-4 px-4 rounded-xl font-medium flex items-center justify-center space-x-2 text-sm">
             <CheckCircle className="h-5 w-5" />
             <span>You're on the Whitelist!</span>
           </div>
@@ -118,7 +176,7 @@ const StatusCard: React.FC<StatusCardProps> = ({
             <button
               onClick={onCancelWhitelist}
               disabled={isCancellingWhitelist}
-              className="w-full inline-flex items-center justify-center space-x-2 bg-red-50 hover:bg-red-100 text-red-600 py-2.5 px-4 rounded-lg font-medium transition-colors text-sm disabled:opacity-70"
+              className="w-full inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-red-50 to-pink-50 hover:from-red-100 hover:to-pink-100 text-red-600 py-3 px-4 rounded-xl font-medium transition-all text-sm disabled:opacity-70 border border-red-200"
             >
               {isCancellingWhitelist ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -132,9 +190,12 @@ const StatusCard: React.FC<StatusCardProps> = ({
       ) : (
         <Link
           to={`/whitelist/${event.id}`} // Pastikan path ini benar
-          className="w-full inline-block bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold text-center transition-all transform hover:scale-105 text-base"
+          className="w-full inline-block bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 px-4 rounded-xl font-semibold text-center transition-all transform hover:scale-105 text-base shadow-lg"
         >
-          Join Whitelist
+          <div className="flex items-center justify-center space-x-2">
+            <UserCheck className="h-5 w-5" />
+            <span>Join Whitelist</span>
+          </div>
         </Link>
       );
     }
@@ -145,7 +206,7 @@ const StatusCard: React.FC<StatusCardProps> = ({
         return (
           <Link
             to={`/mint/${event.id}`} // Pastikan path ini benar
-            className="w-full inline-flex items-center justify-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg font-semibold text-center transition-all transform hover:scale-105 text-base"
+            className="w-full inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-4 px-4 rounded-xl font-semibold text-center transition-all transform hover:scale-105 text-base shadow-lg"
           >
             <Award className="h-5 w-5" />
             <span>Mint Your Certificate</span>
@@ -153,8 +214,9 @@ const StatusCard: React.FC<StatusCardProps> = ({
         );
       } else { // User tidak hadir atau status kehadiran tidak diketahui
         return (
-          <div className="w-full bg-yellow-100 text-yellow-800 py-3 px-4 rounded-lg font-semibold text-center mt-2 text-sm">
-            Certificate minting is active, but attendance record not found.
+          <div className="w-full bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 text-yellow-800 py-4 px-4 rounded-xl font-medium text-center text-sm flex items-center justify-center">
+            <AlertTriangle className="h-5 w-5 mr-2" />
+            Certificate minting is active, but attendance record not found
           </div>
         );
       }
@@ -163,7 +225,8 @@ const StatusCard: React.FC<StatusCardProps> = ({
     // 6. Event sudah berakhir (ended)
     if (currentEventState === 'ended') {
       return (
-        <div className="w-full bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-semibold text-center mt-2 text-sm">
+        <div className="w-full bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 text-gray-700 py-4 px-4 rounded-xl font-medium text-center text-sm flex items-center justify-center">
+          <CheckCircle className="h-5 w-5 mr-2" />
           Event Has Ended
         </div>
       );
@@ -172,13 +235,15 @@ const StatusCard: React.FC<StatusCardProps> = ({
     return null; // Fallback jika tidak ada kondisi yang cocok
   };
 
+  const statusConfig = getStatusConfig(currentEventState);
+
   // Tampilan utama berdasarkan state event
   if (currentEventState === 'upcoming' && !isTimeUp) {
     return (
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 sm:p-6 shadow-lg">
-        <h3 className="text-base sm:text-lg font-semibold text-blue-800 mb-2 sm:mb-4 flex items-center justify-center">
-          <Clock className="h-5 w-5 mr-2" />
-          Event Starts In
+      <div className={`${statusConfig.bgColor} border ${statusConfig.borderColor} rounded-2xl p-6 shadow-sm`}>
+        <h3 className={`text-lg font-bold ${statusConfig.textColor} mb-4 flex items-center justify-center`}>
+          {statusConfig.icon}
+          <span className="ml-2">{statusConfig.title}</span>
         </h3>
         <CountdownTimer timeLeft={timeLeft} />
         {renderPrimaryAction()}
@@ -188,31 +253,26 @@ const StatusCard: React.FC<StatusCardProps> = ({
 
   // Tampilan jika event sudah lewat waktu mulainya ATAU sudah selesai/dibatalkan
   // Kita bisa membuat judul yang lebih dinamis di sini
-  let cardTitle = "Event Status";
   let cardDescription = "";
 
   if (currentEventState === 'ongoing') {
-    cardTitle = "Event is Live!";
-    cardDescription = "Join now to participate.";
+    cardDescription = "Join now to participate in this exciting event.";
   } else if (currentEventState === 'minting') {
-    cardTitle = "Certificate Minting Open";
     cardDescription = "If you attended, you can now mint your certificate.";
   } else if (currentEventState === 'ended') {
-    cardTitle = "Event Concluded";
-    cardDescription = "This event has finished.";
+    cardDescription = "This event has finished. Thank you for participating.";
   } else if (currentEventState === 'canceled') {
-    cardTitle = "Event Canceled";
     cardDescription = "This event will no longer take place.";
   }
 
-
   return (
-    <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 sm:p-6 shadow-lg">
-      <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 text-center">
-        {cardTitle}
+    <div className={`${statusConfig.bgColor} border ${statusConfig.borderColor} rounded-2xl p-6 shadow-sm`}>
+      <h3 className={`text-lg font-bold ${statusConfig.textColor} mb-3 text-center flex items-center justify-center`}>
+        {statusConfig.icon}
+        <span className="ml-2">{statusConfig.title}</span>
       </h3>
       {cardDescription && (
-        <p className="text-sm text-gray-600 mb-4 text-center">
+        <p className={`text-sm ${statusConfig.textColor} mb-6 text-center opacity-80`}>
           {cardDescription}
         </p>
       )}

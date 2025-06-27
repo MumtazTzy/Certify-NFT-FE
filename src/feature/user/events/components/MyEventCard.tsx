@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 // ✅ Impor semua ikon yang dibutuhkan oleh KEDUA jenis badge
 import { 
-  Calendar, MapPin, ArrowRight, Sparkles, XCircle, CheckCircle, 
-  Clock, Award, CheckSquare, XSquare 
+  Calendar, MapPin, ArrowRight, XCircle, CheckCircle, 
+  Clock, Award, CheckSquare, XSquare, Users, Play
 } from 'lucide-react';
 // ✅ Asumsikan path impor ini benar
 import { Event } from '../services/MyeventServices'; 
@@ -19,21 +19,39 @@ interface EventCardProps {
 const EventStatusBadge = ({ status }: { status: Event['status'] }) => {
   const getStatusInfo = () => {
     switch (status) {
-      case 'upcoming': return { color: 'bg-blue-100 text-blue-800 border-blue-200', icon: <Calendar className="h-4 w-4" /> };
-      case 'ongoing': return { color: 'bg-green-100 text-green-800 border-green-200', icon: <span className="relative flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span></span> };
-      case 'minting': return { color: 'bg-purple-100 text-purple-800 border-purple-200', icon: <Sparkles className="h-4 w-4" /> };
-      case 'canceled': return { color: 'bg-red-100 text-red-800 border-red-200', icon: <XCircle className="h-4 w-4" /> };
-      case 'ended': return { color: 'bg-gray-200 text-gray-700 border-gray-300', icon: <CheckCircle className="h-4 w-4" /> };
-      default: return { color: 'bg-gray-200 text-gray-700 border-gray-300', icon: <div className="h-4 w-4 bg-gray-400 rounded-full"></div> };
+      case 'upcoming': return { 
+        color: 'bg-blue-100 text-blue-800 border-blue-200', 
+        icon: <Clock className="h-4 w-4" /> 
+      };
+      case 'ongoing': return { 
+        color: 'bg-green-100 text-green-800 border-green-200', 
+        icon: <Play className="h-4 w-4" /> 
+      };
+      case 'minting': return { 
+        color: 'bg-purple-100 text-purple-800 border-purple-200', 
+        icon: <Award className="h-4 w-4" /> 
+      };
+      case 'canceled': return { 
+        color: 'bg-red-100 text-red-800 border-red-200', 
+        icon: <XCircle className="h-4 w-4" /> 
+      };
+      case 'ended': return { 
+        color: 'bg-gray-100 text-gray-800 border-gray-200', 
+        icon: <CheckCircle className="h-4 w-4" /> 
+      };
+      default: return { 
+        color: 'bg-gray-100 text-gray-800 border-gray-200', 
+        icon: <div className="h-4 w-4 bg-gray-400 rounded-full"></div> 
+      };
     }
   };
 
   const { color, icon } = getStatusInfo();
 
   return (
-    <span className={`inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium border ${color}`}>
+    <span className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-medium border shadow-sm ${color}`}>
       {icon}
-      <span className="capitalize">{status}</span>
+      <span className="capitalize font-medium">{status}</span>
     </span>
   );
 };
@@ -42,21 +60,41 @@ const EventStatusBadge = ({ status }: { status: Event['status'] }) => {
  * @description Menampilkan badge status partisipasi PENGGUNA di sebuah event.
  */
 const UserStatusBadge = ({ status }: { status: Event['user_status'] }) => {
-  if (!status) return null; // Tidak akan render jika status pengguna tidak ada
+  if (!status) return null;
 
-  const statusInfo = {
-    present: { text: 'Present', icon: <CheckSquare className="w-4 h-4" />, color: 'bg-green-100 text-green-800 border border-green-200' },
-    registered: { text: 'Registered', icon: <Clock className="w-4 h-4" />, color: 'bg-blue-100 text-blue-800 border border-blue-200' },
-    absent: { text: 'Absent', icon: <XSquare className="w-4 h-4" />, color: 'bg-red-100 text-red-800 border border-red-200' },
-    claimed: { text: 'Claimed', icon: <Award className="w-4 h-4" />, color: 'bg-purple-100 text-purple-800 border border-purple-200' },
+  const statusInfo: Record<string, { text: string; icon: JSX.Element; color: string }> = {
+    present: { 
+      text: 'Present', 
+      icon: <CheckSquare className="w-4 h-4" />, 
+      color: 'bg-green-100 text-green-800 border border-green-200' 
+    },
+    registered: { 
+      text: 'Registered', 
+      icon: <Clock className="w-4 h-4" />, 
+      color: 'bg-blue-100 text-blue-800 border border-blue-200' 
+    },
+    absent: { 
+      text: 'Absent', 
+      icon: <XSquare className="w-4 h-4" />, 
+      color: 'bg-red-100 text-red-800 border border-red-200' 
+    },
+    claimed: { 
+      text: 'Claimed', 
+      icon: <Award className="w-4 h-4" />, 
+      color: 'bg-purple-100 text-purple-800 border border-purple-200' 
+    },
   };
 
-  const currentStatus = statusInfo[status] || { text: status, icon: null, color: 'text-gray-700 bg-gray-100' };
+  const currentStatus = statusInfo[status] || { 
+    text: status, 
+    icon: <div className="w-4 h-4" />, 
+    color: 'text-gray-700 bg-gray-100 border border-gray-200' 
+  };
 
   return (
-    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${currentStatus.color}`}>
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium shadow-sm ${currentStatus.color}`}>
       {currentStatus.icon}
-      <span>{currentStatus.text}</span>
+      <span className="font-medium">{currentStatus.text}</span>
     </span>
   );
 };
@@ -64,56 +102,114 @@ const UserStatusBadge = ({ status }: { status: Event['user_status'] }) => {
 // --- Komponen Utama ---
 
 export default function EventCard({ event }: EventCardProps) {
-  const imageUrl = event.picture ? `${event.picture}` : 'https://placehold.co/600x400/e2e8f0/cccccc?text=Event+Image';
-
-  const attendeesPercentage = typeof event.attendees === "number" && event.maxattendees > 0
-    ? Math.min((event.attendees / event.maxattendees) * 100, 100) : 0;
+  // Handle optional properties with fallbacks
+  const imageUrl = (event as any).picture ? `${(event as any).picture}` : null;
+  const attendees = (event as any).attendees || 0;
+  const maxAttendees = (event as any).maxattendees || 0;
+  
+  const attendeesPercentage = maxAttendees > 0
+    ? Math.min((attendees / maxAttendees) * 100, 100) : 0;
     
   return (
-    <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 group flex flex-col h-full">
-      <div className="relative aspect-video overflow-hidden">
-        <img src={imageUrl} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg hover:border-purple-200 transition-all duration-300 group flex flex-col h-full">
+      {/* Image Section */}
+      <div className="relative h-48 overflow-hidden">
+        {imageUrl ? (
+          <img 
+            src={imageUrl} 
+            alt={event.title} 
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+            <div className="text-center">
+              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+              <span className="text-gray-500 text-sm">No image available</span>
+            </div>
+          </div>
+        )}
         
-        {/* ✅ FIX: Container untuk KEDUA badge di atas gambar */}
+        {/* Status Badges */}
         <div className="absolute top-3 left-3 flex flex-wrap items-center gap-2">
-          <div className="bg-white/70 backdrop-blur-sm p-0.5 rounded-full">
+          <div className="bg-white/90 backdrop-blur-sm p-0.5 rounded-full shadow-sm">
             <EventStatusBadge status={event.status} />
           </div>
-          {/* Badge ini hanya akan muncul jika `event.user_status` ada */}
           {event.user_status && (
-            <div className="bg-white/70 backdrop-blur-sm p-0.5 rounded-full">
+            <div className="bg-white/90 backdrop-blur-sm p-0.5 rounded-full shadow-sm">
               <UserStatusBadge status={event.user_status} />
             </div>
           )}
         </div>
+
+        {/* Attendance Badge */}
+        <div className="absolute top-3 right-3">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-white/90 backdrop-blur-sm text-gray-700 border border-gray-200 shadow-sm">
+            <Users className="h-3 w-3 mr-1" />
+            {attendees}/{maxAttendees > 0 ? maxAttendees : '∞'}
+          </span>
+        </div>
       </div>
 
-      <div className="flex flex-col flex-1 p-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-purple-600 transition-colors line-clamp-2">{event.title}</h3>
+      {/* Content Section */}
+      <div className="flex flex-col flex-1 p-5">
+        {/* Title */}
+        <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-purple-700 transition-colors line-clamp-2">
+          {event.title}
+        </h3>
         
-        {/* ❌ FIX: UserStatusBadge tidak lagi ditampilkan di sini */}
+        {/* Description */}
+        <p className="text-gray-600 mb-4 text-sm leading-relaxed line-clamp-3 flex-grow">
+          {event.description}
+        </p>
         
-        <p className="text-gray-600 mb-4 text-sm leading-relaxed line-clamp-3 flex-grow">{event.description}</p>
-        
-        <div className="space-y-3 mb-4 text-sm text-gray-700 border-t pt-4">
-          <div className="flex items-center"><Calendar className="h-4 w-4 mr-3 text-gray-500 flex-shrink-0" /><span>{new Date(event.start_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</span></div>
-          <div className="flex items-center"><MapPin className="h-4 w-4 mr-3 text-gray-500 flex-shrink-0" /><span className="truncate">{event.location}</span></div>
+        {/* Event Details */}
+        <div className="space-y-2 mb-4 text-sm text-gray-600">
+          <div className="flex items-center space-x-2">
+            <Calendar className="h-4 w-4 text-gray-400" />
+            <span>
+              {new Date(event.start_date).toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+              })}
+            </span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <MapPin className="h-4 w-4 text-gray-400" />
+            <span className="truncate">{event.location}</span>
+          </div>
         </div>
 
-        <div className="space-y-2 mb-5">
-            <div className="flex justify-between text-sm font-medium text-gray-600">
-                <span>Attendees</span>
-                <span>{event.attendees} / {event.maxattendees > 0 ? event.maxattendees : '∞'}</span>
-            </div>
-            <div className="bg-gray-200 rounded-full h-2.5 w-full overflow-hidden">
-                <div className="bg-gradient-to-r from-purple-500 to-blue-500 h-2.5 rounded-full" style={{ width: `${attendeesPercentage}%` }}></div>
-            </div>
+        {/* Attendance Progress */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+            <span>Attendance</span>
+            <span>{Math.round(attendeesPercentage)}%</span>
+          </div>
+          <div className="bg-gray-200 rounded-full h-2 overflow-hidden">
+            <div 
+              className={`h-2 rounded-full transition-all duration-500 ${
+                event.status === 'ended' || event.status === 'canceled'
+                  ? 'bg-gray-400'
+                  : attendeesPercentage > 80
+                    ? 'bg-red-500'
+                    : attendeesPercentage > 50
+                      ? 'bg-yellow-500'
+                      : 'bg-green-500'
+              }`}
+              style={{ width: `${attendeesPercentage}%` }}
+            ></div>
+          </div>
         </div>
         
+        {/* Action Button */}
         <div className="mt-auto">
-          <Link to={`/events/${event.id}`} className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 group-hover:gap-3">
+          <Link 
+            to={`/events/${event.id}`} 
+            className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 px-4 rounded-xl font-semibold transition-all flex items-center justify-center space-x-2 group-hover:transform group-hover:scale-105 shadow-lg"
+          >
             <span>View Details</span>
-            <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
         </div>
       </div>

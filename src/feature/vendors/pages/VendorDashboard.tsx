@@ -49,6 +49,10 @@ export default function VendorDashboard() {
   const [showAllEvents, setShowAllEvents] = useState(false);
   const INITIAL_DISPLAY_COUNT = 5;
 
+  const displayedEvents = showAllEvents ? events : events.slice(0, INITIAL_DISPLAY_COUNT);
+
+  const handleToggleViewEvents = () => setShowAllEvents(prev => !prev);
+
   useEffect(() => {
     if (!walletAddress) {
       setIsLoading(false);
@@ -125,7 +129,7 @@ export default function VendorDashboard() {
     loadData();
   }, [walletAddress]);
 
-  // ... (sisa kode komponen tetap sama: stats, getStatusColor, handleToggleViewEvents, displayedEvents, JSX)
+  // ... (sisa kode komponen tetap sama: stats, getStatusColor, JSX)
   const stats = useMemo(() => {
     if (!events) return { totalEvents: 0, totalCertificates: 0, totalAttendees: 0, totalWhitelisted: 0, activeEvents: 0 };
     
@@ -149,17 +153,6 @@ export default function VendorDashboard() {
     };
     return colors[status] || colors.completed;
   };
-
-  const handleToggleViewEvents = () => {
-    setShowAllEvents(prev => !prev);
-  };
-
-  const displayedEvents = useMemo(() => {
-    if (showAllEvents) {
-      return events; // events sudah diurutkan saat di-load
-    }
-    return events.slice(0, INITIAL_DISPLAY_COUNT); // events.slice juga akan mengambil dari array yang sudah diurutkan
-  }, [events, showAllEvents]);
   
   if (isLoading) {
     return <DashboardLoading />;

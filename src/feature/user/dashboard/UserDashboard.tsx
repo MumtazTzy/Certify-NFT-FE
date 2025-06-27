@@ -70,10 +70,8 @@ export default function UserDashboard() {
     totalEvents: events.length,
     totalCertificates: certificates.length,
     activeEvents: events.filter(e => e.status === 'ongoing').length,
-    // Example: count certificates minted this month (dummy logic)
-    monthlyCertificates: certificates.length, // Replace with real logic if available
+    attendedEvents: attendedEvents.length,
   };
-
 
   // Certificate Card
   const CertificateCard = ({ certificate }: { certificate: Certificate }) => (
@@ -227,56 +225,58 @@ export default function UserDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">User Dashboard</h1>
-              <p className="text-gray-600 mt-1">Welcome! Here is your activity summary and quick access to your features.</p>
-            </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">User Dashboard</h1>
+            <p className="text-gray-600">Welcome back! Here's your activity summary and quick access to your features.</p>
           </div>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Events</p>
+                <p className="text-sm font-medium text-gray-600 mb-1">Total Events</p>
                 <p className="text-3xl font-bold text-gray-900">{stats.totalEvents}</p>
+                <p className="text-xs text-gray-500 mt-1">Registered events</p>
               </div>
-              <div className="bg-blue-50 w-12 h-12 rounded-lg flex items-center justify-center">
+              <div className="bg-blue-50 w-12 h-12 rounded-xl flex items-center justify-center">
                 <Calendar className="h-6 w-6 text-blue-600" />
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Certificates</p>
+                <p className="text-sm font-medium text-gray-600 mb-1">Total Certificates</p>
                 <p className="text-3xl font-bold text-gray-900">{stats.totalCertificates}</p>
+                <p className="text-xs text-gray-500 mt-1">Earned certificates</p>
               </div>
-              <div className="bg-purple-50 w-12 h-12 rounded-lg flex items-center justify-center">
+              <div className="bg-purple-50 w-12 h-12 rounded-xl flex items-center justify-center">
                 <Award className="h-6 w-6 text-purple-600" />
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Active Events</p>
+                <p className="text-sm font-medium text-gray-600 mb-1">Active Events</p>
                 <p className="text-3xl font-bold text-gray-900">{stats.activeEvents}</p>
+                <p className="text-xs text-gray-500 mt-1">Currently ongoing</p>
               </div>
-              <div className="bg-green-50 w-12 h-12 rounded-lg flex items-center justify-center">
+              <div className="bg-green-50 w-12 h-12 rounded-xl flex items-center justify-center">
                 <BarChart3 className="h-6 w-6 text-green-600" />
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Certificates This Month</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.monthlyCertificates}</p>
+                <p className="text-sm font-medium text-gray-600 mb-1">Events Attended</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.attendedEvents}</p>
+                <p className="text-xs text-gray-500 mt-1">Successfully attended</p>
               </div>
-              <div className="bg-orange-50 w-12 h-12 rounded-lg flex items-center justify-center">
+              <div className="bg-orange-50 w-12 h-12 rounded-xl flex items-center justify-center">
                 <TrendingUp className="h-6 w-6 text-orange-600" />
               </div>
             </div>
@@ -307,7 +307,10 @@ export default function UserDashboard() {
             )}
           </div>
           {loadingEvents ? (
-            <p>Loading events...</p>
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+              <span className="ml-3 text-gray-600">Loading events...</span>
+            </div>
           ) : (
             <div className="overflow-x-auto">
               {displayedEvents.length > 0 ? (
@@ -330,7 +333,7 @@ export default function UserDashboard() {
                       const canAttend = event.status === 'ongoing' && !isAttended && !isWhitelist;
                       const canMint = (event.status === 'ended' || event.status === 'minting') && isAttended && !isMinted && !isWhitelist;
                       return (
-                        <tr key={event.id} className="bg-white border-b hover:bg-gray-50">
+                        <tr key={event.id} className="bg-white border-b hover:bg-gray-50 transition-colors">
                           <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
                             <div>{event.title}</div>
                             <div className="text-xs text-gray-500">{event.location}</div>
@@ -350,8 +353,12 @@ export default function UserDashboard() {
                           <td className="px-6 py-4 text-center">
                             <Link
                               to={`/events/${event.id}`}
-                              className="inline-block bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg font-semibold shadow-sm transition-colors"
+                              className="inline-flex items-center px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg font-medium shadow-sm transition-colors"
                             >
+                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
                               View Detail
                             </Link>
                           </td>
@@ -395,10 +402,32 @@ export default function UserDashboard() {
                   </tbody>
                 </table>
               ) : (
-                <div className="text-center py-12">
-                  <Calendar className="h-12 w-12 text-gray-400 mx-auto" />
-                  <h3 className="mt-4 text-lg font-semibold text-gray-800">No Events Found</h3>
-                  <p className="mt-1 text-gray-500">You haven't registered for any events yet.</p>
+                <div className="text-center py-16">
+                  <div className="bg-gray-50 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
+                    <Calendar className="h-10 w-10 text-gray-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-3">No Events Found</h3>
+                  <p className="text-gray-500 mb-8 max-w-md mx-auto">
+                    You haven't registered for any events yet. Start exploring events to build your certificate collection.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <Link
+                      to="/events"
+                      className="inline-flex items-center px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors font-medium"
+                    >
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      Browse Events
+                    </Link>
+                    <Link
+                      to="/profile"
+                      className="inline-flex items-center px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+                    >
+                      <User className="w-5 h-5 mr-2" />
+                      Update Profile
+                    </Link>
+                  </div>
                 </div>
               )}
             </div>
@@ -453,7 +482,7 @@ export default function UserDashboard() {
         </div>
 
         {/* Certificate Verification Section */}
-        <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl p-6 mb-8">
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl shadow-xl p-6 mb-8">
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <h3 className="text-lg font-bold text-gray-900 mb-2">Verify Certificate</h3>
@@ -487,29 +516,36 @@ export default function UserDashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <Link
             to="/profile"
-            className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all group"
+            className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all group border border-gray-100 hover:border-purple-200"
           >
             <div className="flex items-center space-x-4">
-              <div className="bg-blue-50 group-hover:bg-blue-100 w-12 h-12 rounded-lg flex items-center justify-center transition-colors">
+              <div className="bg-blue-50 group-hover:bg-blue-100 w-12 h-12 rounded-xl flex items-center justify-center transition-colors">
                 <User className="h-6 w-6 text-blue-600" />
               </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">My Profile</h3>
-                <p className="text-sm text-gray-600">View and update your profile information</p>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">My Profile</h3>
+                <p className="text-sm text-gray-600 mt-1">View and update your profile information</p>
               </div>
+              <svg className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </div>
           </Link>
-          <div className="bg-white rounded-2xl shadow-lg p-6 group">
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
             <div className="flex items-center space-x-4">
-              <div className="bg-green-50 w-12 h-12 rounded-lg flex items-center justify-center">
+              <div className="bg-green-50 w-12 h-12 rounded-xl flex items-center justify-center">
                 <BarChart3 className="h-6 w-6 text-green-600" />
               </div>
-              <div>
+              <div className="flex-1">
                 <h3 className="font-semibold text-gray-900">Activity Statistics</h3>
-                <p className="text-sm text-gray-600">See your event and certificate stats</p>
+                <p className="text-sm text-gray-600 mt-1">See your event and certificate stats</p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-green-600">{stats.totalEvents}</p>
+                <p className="text-xs text-gray-500">Total Events</p>
               </div>
             </div>
           </div>
@@ -517,32 +553,75 @@ export default function UserDashboard() {
 
         {/* Attendance Token Modal */}
         {attendanceModal.open && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-            <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
-              <h3 className="text-lg font-bold mb-4 text-gray-900">Enter Attendance Token</h3>
-              <p className="mb-4 text-gray-600 text-sm">Ask the event vendor for your attendance token, then enter it below to mark your attendance.</p>
-              <input
-                type="text"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-4"
-                placeholder="Enter token..."
-                value={attendanceToken}
-                onChange={e => setAttendanceToken(e.target.value)}
-                autoFocus
-              />
-              <div className="flex justify-end space-x-2">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4 transform transition-all">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-blue-50 rounded-full p-2">
+                    <DoorOpen className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">Mark Attendance</h3>
+                    <p className="text-sm text-gray-500">Enter your attendance token</p>
+                  </div>
+                </div>
                 <button
-                  className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300"
+                  onClick={() => { setAttendanceModal({ open: false, eventId: null }); setAttendanceToken(''); }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Attendance Token
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    placeholder="Enter your token..."
+                    value={attendanceToken}
+                    onChange={e => setAttendanceToken(e.target.value)}
+                    autoFocus
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Ask the event organizer for your attendance token
+                  </p>
+                </div>
+                
+                <div className="bg-blue-50 rounded-xl p-4">
+                  <div className="flex items-start space-x-3">
+                    <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <p className="text-sm font-medium text-blue-900">How to get your token?</p>
+                      <p className="text-xs text-blue-700 mt-1">
+                        Contact the event organizer or check your event details for the attendance token.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  className="px-6 py-2.5 rounded-xl bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition-colors"
                   onClick={() => { setAttendanceModal({ open: false, eventId: null }); setAttendanceToken(''); }}
                 >
                   Cancel
                 </button>
                 <button
-                  className="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700"
+                  className="px-6 py-2.5 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={async () => {
                     if (!attendanceToken.trim()) return;
                     try {
                       const res = await attendEventWithToken(attendanceToken.trim(), walletAddress ?? '');
-                      toast.success(res.message || 'Attendance successful!');
+                      toast.success(res.message || 'Attendance marked successfully!');
                       setAttendedEvents([...attendedEvents, attendanceModal.eventId!]);
                       setAttendanceModal({ open: false, eventId: null });
                       setAttendanceToken('');
@@ -556,7 +635,7 @@ export default function UserDashboard() {
                   }}
                   disabled={!attendanceToken.trim()}
                 >
-                  Submit
+                  Mark Attendance
                 </button>
               </div>
             </div>
