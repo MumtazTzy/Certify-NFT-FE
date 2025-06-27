@@ -49,7 +49,7 @@ const StatusCard: React.FC<StatusCardProps> = ({
   const { isTimeUp, ...timeLeft } = useCountdown(event.start_date);
 
   // Status event yang lebih deskriptif
-  let currentEventState: 'upcoming' | 'ongoing' | 'minting' | 'ended' | 'canceled' = event.status;
+  let currentEventState: 'upcoming' | 'ongoing' | 'minting' | 'ended' | 'canceled' = event.status as 'upcoming' | 'ongoing' | 'minting' | 'ended' | 'canceled';
   if (event.status === 'upcoming' && !isTimeUp) {
     currentEventState = 'upcoming';
   } else if (event.status === 'upcoming' && isTimeUp) {
@@ -91,10 +91,10 @@ const StatusCard: React.FC<StatusCardProps> = ({
     if (currentEventState === 'ongoing') {
       return isWhitelisted ? (
         <Link
-          to={`/attend/${event.id}`} // Pastikan path ini benar
+          to={`/user/dashboard`} // Pastikan path ini benar
           className="w-full inline-block bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-semibold text-center transition-all transform hover:scale-105 text-base"
         >
-          Join Event Now
+          Attend Event Now
         </Link>
       ) : (
         <Link

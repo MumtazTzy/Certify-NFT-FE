@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Award, BarChart3, TrendingUp, User, CheckCircle, DoorOpen } from 'lucide-react';
+import { Calendar, Award, BarChart3, TrendingUp, User, CheckCircle, DoorOpen, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { Event, fetchUserEvents } from '../events/services/MyeventServices';
 import { Certificate, fetchCertificatesByWallet } from '../certificates/services/certificateService';
@@ -8,9 +8,7 @@ import { connectWallet, signMessage } from '../../auth/lib/wallet';
 import { loginWithWallet } from '../../auth/services/authServices';
 import { useState as useLocalState } from 'react';
 import toast from 'react-hot-toast';
-
-// Dummy token for simulation
-const DUMMY_TOKEN = 'DUMMYTOKEN';
+import { attendEventWithToken, isUserAsAttended } from '../events/services/AttendanceService';
 
 export default function UserDashboard() {
   const { isAuthenticated, walletAddress, login } = useAuth();
@@ -24,6 +22,12 @@ export default function UserDashboard() {
   const [attendanceModal, setAttendanceModal] = useLocalState<{ open: boolean; eventId: number | null }>({ open: false, eventId: null });
   const [attendanceToken, setAttendanceToken] = useLocalState('');
   const [attendedEvents, setAttendedEvents] = useLocalState<number[]>([]);
+
+  // --- View All/Toggle Logic (VendorDashboard style) ---
+  const [showAllEvents, setShowAllEvents] = useState(false);
+  const INITIAL_DISPLAY_COUNT = 5;
+  const displayedEvents = showAllEvents ? events : events.slice(0, INITIAL_DISPLAY_COUNT);
+  const handleToggleViewEvents = () => setShowAllEvents(prev => !prev);
 
   useEffect(() => {
     if (!walletAddress) return;
@@ -42,6 +46,23 @@ export default function UserDashboard() {
       .catch(() => setCertificates([]))
       .finally(() => setLoadingCertificates(false));
   }, [walletAddress]);
+
+  // --- Attendance check on mount for each event ---
+  useEffect(() => {
+    if (!walletAddress || events.length === 0) return;
+    (async () => {
+      const attended: number[] = [];
+      for (const event of events) {
+        try {
+          const res = await isUserAsAttended(walletAddress, String(event.id));
+          if (res.attended) attended.push(event.id);
+        } catch {
+          // ignore error, treat as not attended
+        }
+      }
+      setAttendedEvents(attended);
+    })();
+  }, [walletAddress, events, setAttendedEvents]);
 
   // Stats
   const stats = {
@@ -95,8 +116,12 @@ export default function UserDashboard() {
                 } else {
                   login(address, data.role);
                 }
-              } catch (err: any) {
-                setConnectError(err.message || 'Failed to connect wallet.');
+              } catch (err: unknown) {
+                if (err instanceof Error) {
+                  setConnectError(err.message || 'Failed to connect wallet.');
+                } else {
+                  setConnectError('Failed to connect wallet.');
+                }
               } finally {
                 setIsConnecting(false);
               }
@@ -176,86 +201,103 @@ export default function UserDashboard() {
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-900">My Events</h2>
-            <Link
-              to="/myevents"
-              className="text-blue-600 hover:text-blue-700 font-semibold text-sm"
-            >
-              View All Events
-            </Link>
+            {events.length > INITIAL_DISPLAY_COUNT && (
+              <button
+                onClick={handleToggleViewEvents}
+                className="text-purple-600 hover:text-purple-700 font-semibold text-sm inline-flex items-center"
+              >
+                {showAllEvents ? (
+                  <>
+                    <EyeOff className="h-4 w-4 mr-1" />
+                    View Less
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-4 w-4 mr-1" />
+                    View All Events ({events.length})
+                  </>
+                )}
+              </button>
+            )}
           </div>
           {loadingEvents ? (
             <p>Loading events...</p>
-          ) : events.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white rounded-xl shadow-lg">
-                <thead>
-                  <tr>
-                    <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 border-b">Event</th>
-                    <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 border-b">Date</th>
-                    <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 border-b">Status</th>
-                    <th className="py-3 px-6 text-center text-sm font-semibold text-gray-700 border-b">View Detail</th>
-                    <th className="py-3 px-6 text-center text-sm font-semibold text-gray-700 border-b">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {events.slice(0, 3).map((event) => {
-                    // Determine button states and icons
-                    const isWhitelist = event.status === 'upcoming' && event.user_status === 'registered';
-                    const isAttended = attendedEvents.includes(event.id) || event.user_status === 'present' || event.user_status === 'claimed';
-                    const isMinted = event.user_status === 'claimed';
-                    const canAttend = event.status === 'ongoing' && !isAttended && !isWhitelist;
-                    const canMint = (event.status === 'ended' || event.status === 'minting') && isAttended && !isMinted && !isWhitelist;
-                    return (
-                      <tr key={event.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="py-4 px-6 font-medium text-gray-900">
-                          <div>{event.title}</div>
-                          <div className="text-xs text-gray-500">{event.location}</div>
-                        </td>
-                        <td className="py-4 px-6 text-gray-600">{new Date(event.start_date).toLocaleDateString()}</td>
-                        <td className="py-4 px-6 text-gray-600 capitalize">{event.status}</td>
-                        <td className="py-4 px-6 text-center">
-                          <Link
-                            to={`/events/${event.id}`}
-                            className="inline-block bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg font-semibold shadow-sm transition-colors"
-                          >
-                            View Detail
-                          </Link>
-                        </td>
-                        <td className="py-4 px-6 text-center space-x-2">
-                          {/* Attend Button */}
-                          {isAttended ? (
-                            <span className="inline-flex items-center justify-center bg-green-100 text-green-600 rounded-full p-2"><CheckCircle className="h-5 w-5" /></span>
-                          ) : (
-                            <button
-                              className={`inline-flex items-center justify-center bg-gray-100 hover:bg-blue-100 text-blue-600 rounded-full p-2 transition-colors ${!canAttend ? 'opacity-50 cursor-not-allowed' : ''}`}
-                              disabled={!canAttend}
-                              title={canAttend ? 'Attend Event' : 'Cannot attend yet'}
-                              onClick={() => setAttendanceModal({ open: true, eventId: event.id })}
-                            >
-                              <DoorOpen className="h-5 w-5" />
-                            </button>
-                          )}
-                          {/* Mint Button */}
-                          {isMinted ? (
-                            <span className="inline-flex items-center justify-center bg-green-100 text-green-600 rounded-full p-2"><CheckCircle className="h-5 w-5" /></span>
-                          ) : (
-                            <button
-                              className={`inline-flex items-center justify-center bg-gray-100 hover:bg-purple-100 text-purple-600 rounded-full p-2 transition-colors ${!canMint ? 'opacity-50 cursor-not-allowed' : ''}`}
-                              disabled={!canMint}
-                              title={canMint ? 'Mint Certificate' : 'Cannot mint yet'}
-                            >
-                              <Award className="h-5 w-5" />
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
           ) : (
-            <p className="text-gray-500">No events found.</p>
+            <div className="overflow-x-auto">
+              {displayedEvents.length > 0 ? (
+                <table className="min-w-full bg-white rounded-xl shadow-lg">
+                  <thead>
+                    <tr>
+                      <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 border-b">Event</th>
+                      <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 border-b">Date</th>
+                      <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 border-b">Status</th>
+                      <th className="py-3 px-6 text-center text-sm font-semibold text-gray-700 border-b">View Detail</th>
+                      <th className="py-3 px-6 text-center text-sm font-semibold text-gray-700 border-b">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {displayedEvents.map((event) => {
+                      // Determine button states and icons
+                      const isWhitelist = event.status === 'upcoming' && event.user_status === 'registered';
+                      const isAttended = attendedEvents.includes(event.id) || event.user_status === 'present' || event.user_status === 'claimed';
+                      const isMinted = event.user_status === 'claimed';
+                      const canAttend = event.status === 'ongoing' && !isAttended && !isWhitelist;
+                      const canMint = (event.status === 'ended' || event.status === 'minting') && isAttended && !isMinted && !isWhitelist;
+                      return (
+                        <tr key={event.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="py-4 px-6 font-medium text-gray-900">
+                            <div>{event.title}</div>
+                            <div className="text-xs text-gray-500">{event.location}</div>
+                          </td>
+                          <td className="py-4 px-6 text-gray-600">{new Date(event.start_date).toLocaleDateString()}</td>
+                          <td className="py-4 px-6 text-gray-600 capitalize">{event.status}</td>
+                          <td className="py-4 px-6 text-center">
+                            <Link
+                              to={`/events/${event.id}`}
+                              className="inline-block bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg font-semibold shadow-sm transition-colors"
+                            >
+                              View Detail
+                            </Link>
+                          </td>
+                          <td className="py-4 px-6 text-center space-x-2">
+                            {/* Attend Button */}
+                            {isAttended ? (
+                              <span className="inline-flex items-center justify-center bg-green-100 text-green-600 rounded-full p-2">
+                                <CheckCircle className="h-5 w-5" />
+                              </span>
+                            ) : (
+                              <button
+                                className={`inline-flex items-center justify-center bg-gray-100 hover:bg-blue-100 text-blue-600 rounded-full p-2 transition-colors
+                                  ${canAttend ? 'hover:animate-pulse' : 'opacity-50 cursor-not-allowed'}`}
+                                disabled={!canAttend}
+                                title={canAttend ? 'Attend Event' : 'Cannot attend yet'}
+                                onClick={() => setAttendanceModal({ open: true, eventId: event.id })}
+                              >
+                                <DoorOpen className="h-5 w-5" />
+                              </button>
+                            )}
+                            {/* Mint Button */}
+                            {isMinted ? (
+                              <span className="inline-flex items-center justify-center bg-green-100 text-green-600 rounded-full p-2"><CheckCircle className="h-5 w-5" /></span>
+                            ) : (
+                              <button
+                                className={`inline-flex items-center justify-center bg-gray-100 hover:bg-purple-100 text-purple-600 rounded-full p-2 transition-colors ${!canMint ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                disabled={!canMint}
+                                title={canMint ? 'Mint Certificate' : 'Cannot mint yet'}
+                              >
+                                <Award className="h-5 w-5" />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="text-gray-500">No events found.</p>
+              )}
+            </div>
           )}
         </div>
 
@@ -351,14 +393,20 @@ export default function UserDashboard() {
                 </button>
                 <button
                   className="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700"
-                  onClick={() => {
-                    if (attendanceToken.trim() === DUMMY_TOKEN) {
+                  onClick={async () => {
+                    if (!attendanceToken.trim()) return;
+                    try {
+                      const res = await attendEventWithToken(attendanceToken.trim(), walletAddress ?? '');
+                      toast.success(res.message || 'Attendance successful!');
                       setAttendedEvents([...attendedEvents, attendanceModal.eventId!]);
-                      toast.success('Attendance successful!');
                       setAttendanceModal({ open: false, eventId: null });
                       setAttendanceToken('');
-                    } else {
-                      toast.error('Invalid token. Please try again.');
+                    } catch (err: unknown) {
+                      if (err instanceof Error) {
+                        toast.error(err.message || 'Failed to mark attendance.');
+                      } else {
+                        toast.error('Failed to mark attendance.');
+                      }
                     }
                   }}
                   disabled={!attendanceToken.trim()}

@@ -9,18 +9,10 @@ export interface Event {
   id: number;
   title: string;
   description: string;
-  vendor_id: number;
+  location: string;
   start_date: string;
   end_date: string;
-  status: 'upcoming' | 'ongoing' | 'ended' | 'canceled' | 'minting';
-  created_at: string;
-  updated_at: string;
-  picture: string;
-  maxattendees: number;
-  location: string; // <-- ADD THIS LINE
-  attendees: number;
-  requirements: string[];
-  agenda: AgendaItem[];
-  whitelisted: number;
-  organizer: string;
+  status: string;
+  user_status?: string;
+  token?: string | null;
 }
