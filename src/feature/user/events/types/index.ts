@@ -3,6 +3,9 @@
 export interface AgendaItem {
   time: string;
   topic: string;
+  description?: string;
+  speaker?: string;
+  duration?: string;
 }
 
 export interface Event {

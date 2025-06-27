@@ -9,7 +9,6 @@ interface AgendaListProps {
 
 const AgendaList: React.FC<AgendaListProps> = ({ agenda = [], eventDate }) => {
   const formatTime = (time: string) => {
-    // Assuming time is in format "HH:MM" or "HH:MM AM/PM"
     return time;
   };
 

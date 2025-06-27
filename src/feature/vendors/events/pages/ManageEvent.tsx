@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link} from 'react-router-dom';
 import {
     Loader2, AlertCircle, Sparkles, CheckCircle, Users, Info, UploadCloud, Replace
-} from 'lucide-react'; // Added UploadCloud, Replace
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { Event, WhitelistEntry, EventStatus } from '../types';
@@ -12,7 +12,7 @@ import ConfirmationModal from '../../../../components/ConfirmationModal';
 import Modal from '../../../../components/Modal';
 import FileUploadForm from '../components/FileUploadForm';
 import { useAuth } from '../../../auth/hooks/useAuth';
-import { useWhitelist } from '../../events/hooks/useWhitelist';
+import { useWhitelist } from '../hooks/useWhitelist';
 
 // Import API service functions
 import {
@@ -21,7 +21,6 @@ import {
     updateEventStatusAPI,
     uploadCertificateImageAPI,
     mintCertificateAPI,
-    
 } from '../services/eventApiService';
 
 // Import UI Components
@@ -64,8 +63,9 @@ export default function ManageEvent() {
     const [uploadedCertificates, setUploadedCertificates] = useState<Record<string, {
         filePath: string; tokenURI?: string; event_id_from_upload?: string;
     }>>({});
-        const [mintedCertificates, setMintedCertificates] = useState<Record<string, {
-        transactionHash?: string; apiResponse?: any;
+    const [mintedCertificates, setMintedCertificates] = useState<Record<string, {
+        transactionHash?: string; 
+        apiResponse?: Record<string, unknown>;
     }>>({});
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [uploadTargetUser, setUploadTargetUser] = useState<WhitelistEntry | null>(null);
@@ -426,21 +426,21 @@ export default function ManageEvent() {
 
     return (
         <>
-            <div className="min-h-screen bg-gray-50 py-8">
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <EventHeader
                         eventTitle={event.title}
                         eventId={event.id}
                         isEventCanceled={isEventCanceled}
                         isEventEnded={isEventEnded}
-                        isProcessing={isProcessing || isProcessingEventCertUpload} // Combine general processing with cert upload processing
+                        isProcessing={isProcessing || isProcessingEventCertUpload}
                         onOpenCancelModal={() => setIsCancelModalOpen(true)}
                     />
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <EventDetailsDisplay
                             event={event}
-                            uploadedCertificatesCount={Object.keys(uploadedCertificates).length} // This counts per-user uploads
+                            uploadedCertificatesCount={Object.keys(uploadedCertificates).length}
                             mintedCertificatesCount={event.certificates_minted ?? Object.keys(mintedCertificates).length}
                         />
 
@@ -454,75 +454,77 @@ export default function ManageEvent() {
                                 isEventCanceled={isEventCanceled}
                                 onChangeEventStatus={handleChangeEventStatus}
                             />
+                            
                             <EventQuickActions
-                            eventId={event.id}
-                            whitelistCount={event.whitelisted ?? whitelist.length ?? 0}
-                            renderUploadCertificateButton={ // Ini adalah prop yang penting
-                                <div className="flex flex-col items-center w-full">
-                                    {/* KONDISI 1: Template BELUM diunggah */}
-                                    {!eventCertificateDisplayInfo ? (
-                                        <button
-                                            onClick={() => document.getElementById('event-certificate-upload-input')?.click()}
-                                            disabled={isProcessingEventCertUpload || isEventCanceled}
-                                            className="w-full px-4 py-2 rounded-lg font-semibold shadow transition-colors bg-blue-100 text-blue-800 hover:bg-blue-200 disabled:bg-gray-200 disabled:text-gray-500"
-                                        >
-                                            {isProcessingEventCertUpload ? (
-                                                <Loader2 className="h-5 w-5 mr-2 inline animate-spin" />
-                                            ) : (
-                                                <UploadCloud className="h-5 w-5 mr-2 inline" />
-                                            )}
-                                            {isProcessingEventCertUpload ? 'Uploading Template...' : 'Upload Event Certificate Template'}
-                                        </button>
-                                    ) : (
-                                        /* KONDISI 2: Template SUDAH diunggah */
-                                        <div className="w-full p-3 border border-green-300 bg-green-50 rounded-lg text-center">
-                                            <div className="flex items-center justify-center text-green-700">
-                                                <CheckCircle className="h-5 w-5 mr-2 text-green-600" />
-                                                <span className="font-semibold text-sm">Template Uploaded:</span>
-                                            </div>
-                                            <p className="text-xs text-gray-600 truncate mt-1" title={eventCertificateDisplayInfo.originalFileName}>
-                                                {eventCertificateDisplayInfo.originalFileName}
-                                            </p>
-                                            <img
-                                                src={eventCertificateDisplayInfo.filePath}
-                                                alt="Certificate Template Preview"
-                                                className="mt-2 rounded-lg shadow max-h-32 border border-gray-200 object-contain mx-auto"
-                                                style={{ maxWidth: 160 }}
-                                            />
+                                eventId={event.id}
+                                whitelistCount={event.whitelisted ?? whitelist.length ?? 0}
+                                renderUploadCertificateButton={
+                                    <div className="flex flex-col items-center w-full">
+                                        {!eventCertificateDisplayInfo ? (
                                             <button
-                                                onClick={handleReplaceEventCertificate}
+                                                onClick={() => document.getElementById('event-certificate-upload-input')?.click()}
                                                 disabled={isProcessingEventCertUpload || isEventCanceled}
-                                                className="mt-3 w-full text-xs px-3 py-1.5 rounded-md font-medium shadow-sm transition-colors bg-yellow-100 text-yellow-800 hover:bg-yellow-200 disabled:bg-gray-200 disabled:text-gray-500"
+                                                className="w-full px-4 py-3 rounded-xl font-semibold shadow-sm transition-all duration-200 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
                                             >
-                                                <Replace className="h-4 w-4 mr-1 inline"/> Replace Template
+                                                {isProcessingEventCertUpload ? (
+                                                    <Loader2 className="h-5 w-5 mr-2 inline animate-spin" />
+                                                ) : (
+                                                    <UploadCloud className="h-5 w-5 mr-2 inline" />
+                                                )}
+                                                {isProcessingEventCertUpload ? 'Uploading Template...' : 'Upload Event Certificate Template'}
                                             </button>
-                                        </div>
-                                    )}
-                                    {/* Input file yang tersembunyi */}
-                                    <input
-                                        id="event-certificate-upload-input"
-                                        type="file"
-                                        accept="image/png,image/jpeg"
-                                        style={{ display: 'none' }}
-                                        onChange={e => {
-                                            if (e.target.files && e.target.files[0]) {
-                                                handleEventCertificateFileSelect(e.target.files[0]);
-                                                e.target.value = ''; // Reset input file
-                                            }
-                                        }}
-                                    />
-                                    {/* Tampilkan pesan error jika ada */}
-                                    {eventCertificateUploadError && (
-                                        <p className="mt-2 text-xs text-red-600">{eventCertificateUploadError}</p>
-                                    )}
-                                </div>
-                            }
-                        />
+                                        ) : (
+                                            <div className="w-full p-4 border border-green-300 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl text-center">
+                                                <div className="flex items-center justify-center text-green-700 mb-3">
+                                                    <CheckCircle className="h-5 w-5 mr-2 text-green-600" />
+                                                    <span className="font-semibold text-sm">Template Uploaded</span>
+                                                </div>
+                                                <p className="text-xs text-gray-600 truncate mb-3" title={eventCertificateDisplayInfo.originalFileName}>
+                                                    {eventCertificateDisplayInfo.originalFileName}
+                                                </p>
+                                                <img
+                                                    src={eventCertificateDisplayInfo.filePath}
+                                                    alt="Certificate Template Preview"
+                                                    className="rounded-lg shadow-sm max-h-32 border border-gray-200 object-contain mx-auto mb-3"
+                                                    style={{ maxWidth: 160 }}
+                                                />
+                                                <button
+                                                    onClick={handleReplaceEventCertificate}
+                                                    disabled={isProcessingEventCertUpload || isEventCanceled}
+                                                    className="w-full text-xs px-3 py-2 rounded-lg font-medium transition-all duration-200 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+                                                >
+                                                    <Replace className="h-4 w-4 mr-1 inline"/> Replace Template
+                                                </button>
+                                            </div>
+                                        )}
+                                        
+                                        <input
+                                            id="event-certificate-upload-input"
+                                            type="file"
+                                            accept="image/png,image/jpeg"
+                                            style={{ display: 'none' }}
+                                            onChange={e => {
+                                                if (e.target.files && e.target.files[0]) {
+                                                    handleEventCertificateFileSelect(e.target.files[0]);
+                                                    e.target.value = '';
+                                                }
+                                            }}
+                                        />
+                                        
+                                        {eventCertificateUploadError && (
+                                            <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                                <p className="text-xs text-red-600">{eventCertificateUploadError}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                }
+                            />
 
                             <EventStatistics
                                 registrationRate={registrationRate}
                                 spotsRemaining={spotsRemaining}
                             />
+                            
                             {event?.token && <TokenCard token={event.token} />}
                         </div>
                     </div>
@@ -534,7 +536,7 @@ export default function ManageEvent() {
                         uploadedCertificates={uploadedCertificates}
                         mintedCertificates={mintedCertificates}
                         eventStatus={event.status}
-                        isProcessing={isProcessing} // General processing for individual mint buttons
+                        isProcessing={isProcessing}
                         isEventCanceled={isEventCanceled}
                         onOpenUploadModal={openUploadModal}
                         onMintCertificate={handleMintCertificate}
@@ -570,12 +572,19 @@ export default function ManageEvent() {
                             error={uploadModalError}
                         />
                         <div className="mt-6 flex justify-end space-x-3">
-                            <button type="button" onClick={closeUploadModal} disabled={isProcessing} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500  disabled:bg-gray-200">Cancel</button>
+                            <button 
+                                type="button" 
+                                onClick={closeUploadModal} 
+                                disabled={isProcessing} 
+                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:bg-gray-200 transition-colors"
+                            >
+                                Cancel
+                            </button>
                             <button
                                 type="button"
                                 onClick={handleConfirmUpload}
                                 disabled={!fileToUpload || isProcessing || isEventCanceled || (uploadTargetUser && !isUserConsideredPresent(uploadTargetUser))}
-                                className="px-4 py-2 text-sm font-medium text-white bg-purple-600 border border-transparent rounded-md shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:bg-purple-300"
+                                className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 border border-transparent rounded-lg shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:from-purple-300 disabled:to-purple-400 transition-all duration-200"
                             >
                                 {isProcessing ? <Loader2 className="h-4 w-4 animate-spin mr-2 inline" /> : null}
                                 {isProcessing ? 'Processing...' : 'Upload & Prepare for User'}
@@ -586,42 +595,46 @@ export default function ManageEvent() {
             )}
 
             {isEventCertPreviewModalOpen && pendingEventCertificatePreviewFile && (
-                    <Modal
-                        isOpen={isEventCertPreviewModalOpen}
-                        onClose={closeEventCertPreviewModal}
-                        title="Preview Event Certificate Template"
-                    >
-                        <div className="flex flex-col items-center">
+                <Modal
+                    isOpen={isEventCertPreviewModalOpen}
+                    onClose={closeEventCertPreviewModal}
+                    title="Preview Event Certificate Template"
+                >
+                    <div className="flex flex-col items-center">
+                        <div className="relative group mb-4">
                             <img
-                                // [PERBAIKAN] Gunakan URL.createObjectURL untuk pratinjau file lokal
                                 src={URL.createObjectURL(pendingEventCertificatePreviewFile)}
                                 alt="Event Certificate Template Preview"
-                                className="rounded-lg shadow max-h-64 border border-gray-200 object-contain mb-4"
+                                className="rounded-xl shadow-lg max-h-64 border border-gray-200 object-contain group-hover:scale-105 transition-transform duration-300"
                                 style={{ maxWidth: 320 }}
                             />
-                            <p className="text-sm text-gray-600 mb-4">File: {pendingEventCertificatePreviewFile.name}</p>
-                            <div className="flex gap-4 mt-4">
-                                <button
-                                    className="px-4 py-2 rounded bg-gray-300 text-gray-800 font-semibold hover:bg-gray-400"
-                                    onClick={closeEventCertPreviewModal}
-                                    disabled={isProcessingEventCertUpload}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    className="px-4 py-2 rounded bg-green-600 text-white font-semibold hover:bg-green-700 disabled:bg-green-300 flex items-center justify-center"
-                                    onClick={confirmAndInitiateEventCertificateUpload}
-                                    disabled={isProcessingEventCertUpload}
-                                >
-                                    {isProcessingEventCertUpload ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                                    Confirm & Upload Template
-                                </button>
-                            </div>
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300 rounded-xl"></div>
                         </div>
-                    </Modal>
+                        
+                        <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                            <p className="text-sm text-gray-600">File: {pendingEventCertificatePreviewFile.name}</p>
+                        </div>
+                        
+                        <div className="flex gap-4 mt-4">
+                            <button
+                                className="px-6 py-2 rounded-lg bg-gray-300 text-gray-800 font-semibold hover:bg-gray-400 transition-colors"
+                                onClick={closeEventCertPreviewModal}
+                                disabled={isProcessingEventCertUpload}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="px-6 py-2 rounded-lg bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold hover:from-green-700 hover:to-green-800 disabled:from-green-300 disabled:to-green-400 flex items-center justify-center transition-all duration-200 shadow-sm hover:shadow-md"
+                                onClick={confirmAndInitiateEventCertificateUpload}
+                                disabled={isProcessingEventCertUpload}
+                            >
+                                {isProcessingEventCertUpload ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                Confirm & Upload Template
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
             )}
-
-
         </>
     );
 }
