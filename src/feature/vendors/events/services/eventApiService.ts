@@ -1,44 +1,58 @@
-import { Event, EventStatus } from '../types'; // Assuming Event type is defined in '../types'
+import { Event, EventStatus, AgendaItem } from '../types'; // Assuming Event type is defined in '../types'
 
 export const API_BASE_URL_V3 = 'https://api.gpadaka.com/api3';
 export const API_BASE_URL_V1 = 'https://api.gpadaka.com/api1';
 
 // Helper to ensure requirements/agenda are always arrays
-const ensureArray = (value: any): any[] => {
-    return Array.isArray(value) ? value : [];
+const ensureStringArray = (value: unknown): string[] => {
+    return Array.isArray(value) ? value.map(item => String(item)) : [];
 };
 
-const transformEventData = (eventDataFromApi: any): Event => {
+const ensureAgendaArray = (value: unknown): AgendaItem[] => {
+    if (!Array.isArray(value)) return [];
+    return value.map(item => {
+        if (typeof item === 'object' && item !== null) {
+            const agendaItem = item as Record<string, unknown>;
+            return {
+                time: String(agendaItem.time || ''),
+                topic: String(agendaItem.topic || '')
+            };
+        }
+        return { time: '', topic: String(item) };
+    });
+};
+
+const transformEventData = (eventDataFromApi: Record<string, unknown>): Event => {
     // Ensure your Event type definition includes 'token' and 'certificate_uploaded'
     return {
-        id: eventDataFromApi.id,
-        title: eventDataFromApi.title,
-        description: eventDataFromApi.description,
-        organizer: eventDataFromApi.organizer, // Remains, might be optional or from other event detail endpoints
-        location: eventDataFromApi.location,
-        picture: eventDataFromApi.picture,
-        requirements: ensureArray(eventDataFromApi.requirements),
-        agenda: ensureArray(eventDataFromApi.agenda),
+        id: eventDataFromApi.id as number,
+        title: eventDataFromApi.title as string,
+        description: eventDataFromApi.description as string,
+        organizer: eventDataFromApi.organizer as string, // Remains, might be optional or from other event detail endpoints
+        location: eventDataFromApi.location as string,
+        picture: eventDataFromApi.picture as string,
+        requirements: ensureStringArray(eventDataFromApi.requirements),
+        agenda: ensureAgendaArray(eventDataFromApi.agenda),
         
-        start_date: eventDataFromApi.start_date,
-        end_date: eventDataFromApi.end_date,
-        created_at: eventDataFromApi.created_at,
-        updated_at: eventDataFromApi.updated_at,
+        start_date: eventDataFromApi.start_date as string,
+        end_date: eventDataFromApi.end_date as string,
+        created_at: eventDataFromApi.created_at as string,
+        updated_at: eventDataFromApi.updated_at as string,
         status: eventDataFromApi.status as EventStatus,
 
-        vendor_id: eventDataFromApi.vendor_id,
-        max_attendees: eventDataFromApi.max_attendees ?? (eventDataFromApi.maxattendees ?? 0),
-        attendees: eventDataFromApi.attendees ?? 0,
-        whitelisted: eventDataFromApi.whitelisted ?? 0, // Assuming API provides this for detailed event view
-        certificates_minted: eventDataFromApi.certificates_minted ?? (eventDataFromApi.minted ?? 0),
-        certificate_uploaded: eventDataFromApi.certificate_uploaded ?? !!eventDataFromApi.event_template_image_url,
+        vendor_id: eventDataFromApi.vendor_id as number,
+        max_attendees: (eventDataFromApi.max_attendees as number) ?? ((eventDataFromApi.maxattendees as number) ?? 0),
+        attendees: (eventDataFromApi.attendees as number) ?? 0,
+        whitelisted: (eventDataFromApi.whitelisted as number) ?? 0, // Assuming API provides this for detailed event view
+        certificates_minted: (eventDataFromApi.certificates_minted as number) ?? ((eventDataFromApi.minted as number) ?? 0),
+        certificate_uploaded: (eventDataFromApi.certificate_uploaded as boolean) ?? !!(eventDataFromApi.event_template_image_url as string),
         
-        event_template_image_url: eventDataFromApi.event_template_image_url ?? null,
-        event_template_token_uri: eventDataFromApi.event_template_token_uri ?? null,
-        event_template_original_filename: eventDataFromApi.event_template_original_filename ?? null,
+        event_template_image_url: eventDataFromApi.event_template_image_url as string ?? null,
+        event_template_token_uri: eventDataFromApi.event_template_token_uri as string ?? null,
+        event_template_original_filename: eventDataFromApi.event_template_original_filename as string ?? null,
         
-        token: eventDataFromApi.token, // Mapped from API
-        minting_active: eventDataFromApi.minting_active ?? false, // Remains, assuming it can be API-provided
+        token: eventDataFromApi.token as string, // Mapped from API
+        minting_active: (eventDataFromApi.minting_active as boolean) ?? false, // Remains, assuming it can be API-provided
     };
 };
 
@@ -114,7 +128,7 @@ export const uploadCertificateImageAPI = async (
     description: string,
     eventIdContext: number, 
     vendorAddress: string  
-): Promise<{ message: string, filePath?: string, tokenURI?: string, event_id_from_upload?: string}> => {
+): Promise<{ eventIdContext : number, vendorAddress: string, description: string, filePath?: string}> => {
     console.log(`Uploading certificate for event ${eventIdContext} (Description: "${description}") by vendor ${vendorAddress}`);
     const UPLOAD_ENDPOINT = `${API_BASE_URL_V1}/api/certificate/upload`; 
     const formData = new FormData();
@@ -132,10 +146,10 @@ export const uploadCertificateImageAPI = async (
         const result = await response.json();
         if (!response.ok) throw new Error(result.message || `Upload failed. Status: ${response.status}`);
         return {
-            message: result.message || 'Certificate uploaded.',
+            vendorAddress: result.vendor_address,
             filePath: result.urlCertificate,
-            tokenURI: result.urlCertificate, // <--- Use urlCertificate if it's meant to be the tokenURI
-            event_id_from_upload: result.event_id,
+            eventIdContext: result.event_id, // <--- Use event_id if it's meant to be the event_id_from_upload
+            description: result.description,
         };
     } catch (error) {
         console.error("Upload certificate error:", error); 

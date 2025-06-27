@@ -31,6 +31,7 @@ import EventControlPanel from '../components/ManageEvent/ControlPanel';
 import EventQuickActions from '../components/ManageEvent/QuickActions';
 import EventStatistics from '../components/ManageEvent/Statistics';
 import ParticipantCertificatesTable from '../components/ManageEvent/ParticipantCertificatesTable';
+import TokenCard from '../components/ManageEvent/TokenCard';
 
 // Interface for the successfully uploaded event-wide certificate data
 interface EventCertificateApiData {
@@ -76,29 +77,32 @@ export default function ManageEvent() {
     const [isProcessing, setIsProcessing] = useState(false); // General processing for actions like status change, cancel, mint, per-user upload
 
     const loadEventData = useCallback(async () => {
-        if (!eventIdAsNumber) { 
-        setPageError("Event ID is invalid.");
-        setLoadingPage(false);
-        return; // <-- Ini memastikan kode di bawah tidak berjalan jika eventIdAsNumber adalah null
-    }
+        if (!eventIdAsNumber) {
+            setPageError("Event ID is invalid.");
+            setLoadingPage(false);
+            return; // <-- Ini memastikan kode di bawah tidak berjalan jika eventIdAsNumber adalah null
+        }
         try {
             const data = await getEventData(eventIdAsNumber);
             setEvent(data);
 
             // BAGIAN BARU: Mengisi info display template jika data ada di objek 'event'
-            if (data.event_template_image_url && data.event_template_token_uri) {
+            if (data.event_template_image_url && data.certificate_uploaded) {
                 setEventCertificateDisplayInfo({
-                    file: null, // Tidak ada File object saat dimuat dari server
+                    file: null,
                     originalFileName: data.event_template_original_filename || "template_from_server.jpg",
                     filePath: data.event_template_image_url,
-                    tokenURI: data.event_template_token_uri,
+                    tokenURI: data.event_template_image_url,
                 });
             } else {
                 // Pastikan state bersih jika tidak ada template di server
-                setEventCertificateDisplayInfo(null);
+                console.log("No event template found in server.");
+                
             }
             setPageError(null);
         } catch (err) {
+            console.error("Error loading event data:", err);
+            setPageError(err instanceof Error ? err.message : "Failed to load event data.");
             // ... (error handling)
         } finally {
             setLoadingPage(false);
@@ -194,34 +198,26 @@ export default function ManageEvent() {
                 user.walletAddress
             );
 
-            if (!result.tokenURI || !result.filePath) { 
-                if(!result.tokenURI){
-                    throw new Error("Upload response missing crucial data (tokenURI).");
-                }
-                if(!result.filePath){
-                    throw new Error("Upload response missing crucial data (filePath).");
-                }
+            if (!result.filePath) {
+                throw new Error("Upload response missing crucial data (filePath/urlCertificate).");
             }
-            
             setEventCertificateDisplayInfo({
                 file: fileToUpload,
                 originalFileName: fileToUpload.name,
-                filePath: result.filePath!,
-                tokenURI: result.tokenURI!,
+                filePath: result.filePath ?? "",
+                tokenURI: result.filePath ?? "",
             });
-            toast.success(result.message || "Event certificate template uploaded successfully!");
+            toast.success("Event certificate template uploaded successfully!");
             setEvent(prevEvent => {
                 if (!prevEvent) return null;
                 return {
                     ...prevEvent,
-                    event_template_image_url: result.filePath,
-                    event_template_token_uri: result.tokenURI,
+                    event_template_image_url: result.filePath ?? "",
+                    event_template_token_uri: result.filePath ?? "",
                     event_template_original_filename: fileToUpload.name,
                     certificate_uploaded: true,
                 };
             });
-            // Optionally update event state if API indicates this, e.g., event.certificate_template_uploaded = true
-            // setEvent(prev => prev ? { ...prev, certificate_uploaded: true, token: result.tokenURI } : null);
         } catch (err) {
             const msg = err instanceof Error ? err.message : "Failed to upload event certificate template.";
             setEventCertificateUploadError(msg);
@@ -287,25 +283,15 @@ export default function ManageEvent() {
                 `Certificate for ${uploadTargetUser.name} - Event: ${event.title || eventIdAsNumber}`,
                 eventIdAsNumber, user.walletAddress
             );
-            if (!result.tokenURI || !result.filePath) { 
-                if(!result.tokenURI){
-                    throw new Error("Upload response missing crucial data (tokenURI).");
-                }
-                if(!result.filePath){
-                    throw new Error("Upload response missing crucial data (filePath).");
-                }
+            if (!result.filePath) {
+                throw new Error("Upload response missing crucial data (filePath).");
             }
             setUploadedCertificates((prev) => ({
                 ...prev, [uploadTargetUser.id]: {
-                    filePath: result.filePath!, // Assert non-null based on check
-                    tokenURI: result.tokenURI!,
-                    event_id_from_upload: result.event_id_from_upload,
-                    apiResponse: result
+                    filePath: result.filePath ?? "",
                 }
             }));
-            toast.success(result.message || `Certificate for ${uploadTargetUser.name} uploaded.`);
-            // Refresh event data if count is part of it, or whitelist if status changes
-            // loadEventData(); // Could be too broad, consider specific updates
+            toast.success("Certificate for " + uploadTargetUser.name + " uploaded.");
             refreshWhitelist();
             closeUploadModal();
         } catch (err) {
@@ -537,6 +523,7 @@ export default function ManageEvent() {
                                 registrationRate={registrationRate}
                                 spotsRemaining={spotsRemaining}
                             />
+                            {event?.token && <TokenCard token={event.token} />}
                         </div>
                     </div>
 
@@ -633,6 +620,8 @@ export default function ManageEvent() {
                         </div>
                     </Modal>
             )}
+
+
         </>
     );
 }

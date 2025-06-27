@@ -62,7 +62,7 @@ export default function EventDetailsDisplay({
             <div className="bg-white rounded-2xl shadow-lg p-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-4">Event Image</h2>
                 {event.picture ? (
-                    <div className="relative h-48 rounded-xl overflow-hidden">
+                    <div className="relative h-64 rounded-xl overflow-hidden">
                         <img src={`${event.picture}`} alt={event.title} className="w-full h-full object-cover"/>
                     </div>
                 ) : ( <p className="text-gray-500">No image available.</p> )}

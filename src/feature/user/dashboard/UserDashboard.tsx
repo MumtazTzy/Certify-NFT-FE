@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Award, Users, BarChart3, TrendingUp, User, CheckCircle, DoorOpen } from 'lucide-react';
+import { Calendar, Award, BarChart3, TrendingUp, User, CheckCircle, DoorOpen } from 'lucide-react';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { Event, fetchUserEvents } from '../events/services/MyeventServices';
 import { Certificate, fetchCertificatesByWallet } from '../certificates/services/certificateService';
@@ -52,29 +52,6 @@ export default function UserDashboard() {
     monthlyCertificates: certificates.length, // Replace with real logic if available
   };
 
-  // Event Card
-  const EventCard = ({ event }: { event: Event }) => (
-    <div className="bg-white p-4 rounded-lg shadow">
-      <h3 className="text-lg font-semibold mb-1">{event.title}</h3>
-      <p className="text-sm text-gray-500 mb-3">{event.description}</p>
-      <div className="flex flex-col gap-1 text-sm text-gray-600 mb-3">
-        <span className="flex items-center gap-1">
-          <Calendar className="w-4 h-4" />
-          {new Date(event.start_date).toLocaleDateString()}
-        </span>
-        <span className="flex items-center gap-1">
-          <Users className="w-4 h-4" />
-          {event.attendees}/{event.maxattendees} attendees
-        </span>
-      </div>
-      <Link
-        to={`/events/${event.id}`}
-        className="text-blue-600 hover:underline block"
-      >
-        View Details
-      </Link>
-    </div>
-  );
 
   // Certificate Card
   const CertificateCard = ({ certificate }: { certificate: Certificate }) => (
