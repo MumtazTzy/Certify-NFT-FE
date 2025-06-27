@@ -77,51 +77,99 @@ export default function UserDashboard() {
 
   // Certificate Card
   const CertificateCard = ({ certificate }: { certificate: Certificate }) => (
-    <div className="bg-white p-4 rounded-lg shadow border border-gray-200 hover:shadow-md transition-shadow">
-      <div className="flex items-start space-x-3">
-        <div className="flex-shrink-0">
-          <img 
-            src={certificate.event_picture} 
-            alt={certificate.event_title}
-            className="w-12 h-12 rounded-lg object-cover"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = 'https://via.placeholder.com/48x48?text=Event';
-            }}
-          />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-gray-900 truncate">{certificate.event_title}</h3>
-          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{certificate.event_description}</p>
-          <div className="flex items-center justify-between mt-2">
-            <span className="text-xs text-gray-400">
-              {new Date(certificate.event_start_date).toLocaleDateString()}
-            </span>
-            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-              certificate.mint_status === 'minted' ? 'bg-green-100 text-green-800' :
-              certificate.mint_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-              'bg-red-100 text-red-800'
-            }`}>
-              {certificate.mint_status.charAt(0).toUpperCase() + certificate.mint_status.slice(1)}
-            </span>
-          </div>
-          {certificate.mint_transaction_hash && (
-            <div className="mt-2">
-              <p className="text-xs text-gray-500">Transaction:</p>
-              <p className="text-xs text-blue-600 font-mono truncate">
-                {certificate.mint_transaction_hash}
-              </p>
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg hover:border-purple-200 transition-all duration-200 group">
+      <div className="p-5">
+        <div className="flex items-start space-x-4">
+          <div className="flex-shrink-0">
+            <div className="relative">
+              <img 
+                src={certificate.event_picture} 
+                alt={certificate.event_title}
+                className="w-16 h-16 rounded-lg object-cover shadow-sm"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = 'https://via.placeholder.com/64x64?text=Event';
+                }}
+              />
+              <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center ${
+                certificate.mint_status === 'minted' ? 'bg-green-500' :
+                certificate.mint_status === 'pending' ? 'bg-yellow-500' :
+                'bg-red-500'
+              }`}>
+                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
             </div>
-          )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-semibold text-gray-900 group-hover:text-purple-700 transition-colors line-clamp-1">
+              {certificate.event_title}
+            </h3>
+            <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+              {certificate.event_description}
+            </p>
+            <div className="flex items-center justify-between mt-3">
+              <div className="flex items-center space-x-2">
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span className="text-xs text-gray-500">{certificate.event_location}</span>
+              </div>
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                certificate.mint_status === 'minted' ? 'bg-green-100 text-green-800' :
+                certificate.mint_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-red-100 text-red-800'
+              }`}>
+                {certificate.mint_status.charAt(0).toUpperCase() + certificate.mint_status.slice(1)}
+              </span>
+            </div>
+            <div className="flex items-center mt-2">
+              <svg className="w-4 h-4 text-gray-400 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span className="text-xs text-gray-500">
+                {new Date(certificate.event_start_date).toLocaleDateString('en-US', { 
+                  month: 'short', 
+                  day: 'numeric', 
+                  year: 'numeric' 
+                })}
+              </span>
+            </div>
+          </div>
         </div>
+        
+        {certificate.mint_transaction_hash && (
+          <div className="mt-4 pt-3 border-t border-gray-100">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500">Transaction Hash:</span>
+              <span className="text-xs text-blue-600 font-mono truncate max-w-32">
+                {certificate.mint_transaction_hash.slice(0, 8)}...{certificate.mint_transaction_hash.slice(-6)}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
-      <div className="mt-3 pt-3 border-t border-gray-100">
-        <a
-          href="#"
-          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-        >
-          View Certificate →
-        </a>
+      
+      <div className="px-5 pb-4">
+        <div className="flex items-center justify-between">
+          <button className="text-purple-600 hover:text-purple-700 text-sm font-medium group-hover:underline transition-colors">
+            View Certificate
+          </button>
+          <div className="flex items-center space-x-2">
+            <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+            </button>
+            <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -360,39 +408,80 @@ export default function UserDashboard() {
         {/* User Certificates Section */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900">My Certificates</h2>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">My Certificates</h2>
+              <p className="text-sm text-gray-600 mt-1">Your earned certificates from completed events</p>
+            </div>
             <Link
               to="/my-certificates"
-              className="text-purple-600 hover:text-purple-700 font-semibold text-sm"
+              className="text-purple-600 hover:text-purple-700 font-semibold text-sm inline-flex items-center"
             >
               View All Certificates
+              <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </Link>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Kiri: Sertifikat */}
-            <div>
-              {loadingCertificates ? (
-                <p>Loading certificates...</p>
-              ) : certificates.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {certificates.slice(0, 3).map((cert) => (
-                    <CertificateCard key={cert.id} certificate={cert} />
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500">No certificates found.</p>
-              )}
+          
+          {loadingCertificates ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+              <span className="ml-3 text-gray-600">Loading certificates...</span>
             </div>
-            {/* Kanan: Verifikasi Sertifikat */}
-            <div className="flex flex-col items-center justify-center h-full bg-purple-50 rounded-2xl p-6">
-              <h3 className="text-lg font-bold text-purple-800 mb-2">Verify Certificate</h3>
-              <p className="text-sm text-purple-700 mb-4 text-center">Check the authenticity of a certificate by entering its code.</p>
+          ) : certificates.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {certificates.slice(0, 6).map((cert) => (
+                <CertificateCard key={cert.id} certificate={cert} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="bg-gray-50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <Award className="h-8 w-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">No Certificates Yet</h3>
+              <p className="text-gray-500 mb-6">Complete events and mint your certificates to see them here.</p>
+              <Link
+                to="/events"
+                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Browse Events
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* Certificate Verification Section */}
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl p-6 mb-8">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Verify Certificate</h3>
+              <p className="text-gray-600 mb-4">Check the authenticity of any certificate by entering its verification code or transaction hash.</p>
               <Link
                 to="/user/verify"
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition-all"
+                className="inline-flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all transform hover:scale-105"
               >
-                Go to Verification
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Verify Certificate
               </Link>
+            </div>
+            <div className="hidden lg:block ml-8">
+              <div className="bg-white rounded-xl p-4 shadow-sm">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-green-100 rounded-full p-2">
+                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Blockchain Verified</p>
+                    <p className="text-xs text-gray-500">Immutable & Secure</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
