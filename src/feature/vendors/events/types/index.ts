@@ -37,7 +37,10 @@ export interface Event {
   picture: string;
   requirements: string[];
   agenda: AgendaItem[];
-  
+    // Add the missing properties here:
+  token?: string;                  // Add this line. Make it optional if it might not always exist.
+  certificate_uploaded: boolean;  // Add this line
+  urlCertificate?: string; // Optional, if the URL is provided by the API
   // --- Dates and Status ---
   // ✅ Menggunakan snake_case agar konsisten dengan API
   start_date: string;
@@ -53,7 +56,9 @@ export interface Event {
   attendees: number;
   whitelisted: number;
   certificates_minted?: number; // ✅ Diubah menjadi snake_case dan tetap opsional
-  
+   event_template_image_url?: string | null;
+    event_template_token_uri?: string | null;
+    event_template_original_filename?: string | null;
   // --- Flags ---
   minting_active?: boolean; // ✅ Diubah menjadi snake_case dan tetap opsional
 }
@@ -67,6 +72,7 @@ export interface WhitelistEntry {
   walletAddress: string;
   registrationDate: string;
   status: 'active' | 'revoked';
+  certificate_tx_hash?: string; // Example if you store minting transaction hash
   attendance?: boolean; // true if present, false or undefined if absent
 }
 
@@ -78,6 +84,8 @@ export interface ApiWhitelistEntry {
   email: string;
   wallet_address: string;
   status: string; // misal: "approved"
+  
+  certificate_tx_hash?: string; // Example if you store minting transaction hash
   created_at: string;
 }
 

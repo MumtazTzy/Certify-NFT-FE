@@ -1,19 +1,24 @@
-// src/feature/vendors/events/services/eventApiService.ts
-import { Event, EventStatus } from '../types';
+import { Event, EventStatus } from '../types'; // Assuming Event type is defined in '../types'
 
 export const API_BASE_URL_V3 = 'https://api.gpadaka.com/api3';
 export const API_BASE_URL_V1 = 'https://api.gpadaka.com/api1';
 
+// Helper to ensure requirements/agenda are always arrays
+const ensureArray = (value: any): any[] => {
+    return Array.isArray(value) ? value : [];
+};
+
 const transformEventData = (eventDataFromApi: any): Event => {
+    // Ensure your Event type definition includes 'token' and 'certificate_uploaded'
     return {
         id: eventDataFromApi.id,
         title: eventDataFromApi.title,
         description: eventDataFromApi.description,
-        organizer: eventDataFromApi.organizer,
+        organizer: eventDataFromApi.organizer, // Remains, might be optional or from other event detail endpoints
         location: eventDataFromApi.location,
         picture: eventDataFromApi.picture,
-        requirements: Array.isArray(eventDataFromApi.requirements) ? eventDataFromApi.requirements : [],
-        agenda: Array.isArray(eventDataFromApi.agenda) ? eventDataFromApi.agenda : [],
+        requirements: ensureArray(eventDataFromApi.requirements),
+        agenda: ensureArray(eventDataFromApi.agenda),
         
         start_date: eventDataFromApi.start_date,
         end_date: eventDataFromApi.end_date,
@@ -24,10 +29,16 @@ const transformEventData = (eventDataFromApi: any): Event => {
         vendor_id: eventDataFromApi.vendor_id,
         max_attendees: eventDataFromApi.max_attendees ?? (eventDataFromApi.maxattendees ?? 0),
         attendees: eventDataFromApi.attendees ?? 0,
-        whitelisted: eventDataFromApi.whitelisted ?? 0,
+        whitelisted: eventDataFromApi.whitelisted ?? 0, // Assuming API provides this for detailed event view
         certificates_minted: eventDataFromApi.certificates_minted ?? (eventDataFromApi.minted ?? 0),
+        certificate_uploaded: eventDataFromApi.certificate_uploaded ?? !!eventDataFromApi.event_template_image_url,
         
-        minting_active: eventDataFromApi.minting_active ?? false,
+        event_template_image_url: eventDataFromApi.event_template_image_url ?? null,
+        event_template_token_uri: eventDataFromApi.event_template_token_uri ?? null,
+        event_template_original_filename: eventDataFromApi.event_template_original_filename ?? null,
+        
+        token: eventDataFromApi.token, // Mapped from API
+        minting_active: eventDataFromApi.minting_active ?? false, // Remains, assuming it can be API-provided
     };
 };
 
@@ -35,7 +46,7 @@ export const getEventData = async (eventId: number): Promise<Event> => {
     const response = await fetch(`${API_BASE_URL_V3}/api/events/${eventId}`);
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to parse error response' }));
-        throw new Error(errorData.message || 'Failed to fetch event data.');
+        throw new Error(errorData.message || `Failed to fetch event data. Status: ${response.status}`);
     }
     const eventDataFromApi = await response.json();
     return transformEventData(eventDataFromApi);
@@ -43,20 +54,23 @@ export const getEventData = async (eventId: number): Promise<Event> => {
 
 export const cancelEventAPI = async (eventId: number, token?: string): Promise<{ message: string }> => {
     console.log(`Canceling event ID: ${eventId}`);
-    const headers: HeadersInit = {};
+    const headers: HeadersInit = { 'Accept': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
+    
     const response = await fetch(`${API_BASE_URL_V3}/api/events/${eventId}/cancel`, {
-        method: 'POST', headers: headers,
+        method: 'POST', 
+        headers: headers,
     });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.message || 'Failed to cancel the event.');
+    // Try to parse JSON for errors too, as backend might provide error details in JSON
+    const result = await response.json().catch(() => ({ message: `Request failed with status ${response.status}` }));
+    if (!response.ok) throw new Error(result.message || `Failed to cancel the event. Status: ${response.status}`);
     return result;
 };
 
 export const updateEventStatusAPI = async (
     eventId: number,
     newStatus: EventStatus,
-    vendorWalletAddress: string // Dianggap wajib
+    vendorWalletAddress: string 
 ): Promise<{ message: string; event: Event }> => {
     const targetUrl = `${API_BASE_URL_V3}/api/events/${eventId}/update`;
 
@@ -74,61 +88,93 @@ export const updateEventStatusAPI = async (
         body: JSON.stringify(requestPayload),
     });
 
+    const result = await response.json(); 
+
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({
-            message: `API Error (${response.status}): Failed to update event status. Unable to parse error response.`,
-        }));
-        throw new Error(errorData.message || `API Error (${response.status}): Failed to update event status.`);
+        throw new Error(result.message || `API Error (${response.status}): Failed to update event status.`);
     }
-    const result = await response.json();
-    return result;
+    
+    if (!result.event) {
+        // This case should ideally not happen if API guarantees 'event' field on success
+        throw new Error('API Error: Event data not found in successful update response.');
+    }
+    
+    // Transform the event data received in the response
+    const transformedEvent = transformEventData(result.event);
+    
+    return {
+        message: result.message,
+        event: transformedEvent, // Return transformed event
+    };
 };
 
 
 export const uploadCertificateImageAPI = async ( 
-    file: File, name: string, description: string, userAddress: string, 
-    eventIdContext: number, vendorAddress: string
-): Promise<{ message: string, filePath?: string, tokenURI?: string, event_id_from_upload?: string, certificateId?: string }> => {
-    console.log(`Uploading certificate for user ${userAddress} for event ${eventIdContext}`);
+    file: File, 
+    description: string,
+    eventIdContext: number, 
+    vendorAddress: string  
+): Promise<{ message: string, filePath?: string, tokenURI?: string, event_id_from_upload?: string}> => {
+    console.log(`Uploading certificate for event ${eventIdContext} (Description: "${description}") by vendor ${vendorAddress}`);
     const UPLOAD_ENDPOINT = `${API_BASE_URL_V1}/api/certificate/upload`; 
     const formData = new FormData();
     formData.append('description', description);
     formData.append('image', file);
-    formData.append('user_address', userAddress);
-    formData.append('event_id', String(eventIdContext));
+    formData.append('event_id', String(eventIdContext)); 
     formData.append('vendor_address', vendorAddress);
+    
     try {
-        const response = await fetch(UPLOAD_ENDPOINT, { method: 'POST', body: formData });
+        const response = await fetch(UPLOAD_ENDPOINT, { 
+            method: 'POST', 
+            body: formData, 
+            headers: {'Accept': 'application/json'} // Added Accept header
+        });
         const result = await response.json();
         if (!response.ok) throw new Error(result.message || `Upload failed. Status: ${response.status}`);
-        return { 
-            message: result.message || 'Certificate uploaded.', 
-            filePath: result.urlCertificate || result.filePath,
-            tokenURI: result.tokenURI,
-            event_id_from_upload: result.event_id, 
-            certificateId: result.id || result.certificateId 
-        }; 
+        return {
+            message: result.message || 'Certificate uploaded.',
+            filePath: result.urlCertificate,
+            tokenURI: result.urlCertificate, // <--- Use urlCertificate if it's meant to be the tokenURI
+            event_id_from_upload: result.event_id,
+        };
     } catch (error) {
+        console.error("Upload certificate error:", error); 
         if (error instanceof Error) throw error;
-        throw new Error("Unknown upload error.");
+        throw new Error("An unknown error occurred during certificate upload.");
     }
 };
 
 export const mintCertificateAPI = async ( 
-    userAddress: string, tokenURI: string, eventIdForMint: string
+    userAddress: string, 
+    tokenURI: string, 
+    eventIdForMint: string
 ): Promise<{ message: string, transactionHash?: string }> => {
     console.log(`Minting certificate for user ${userAddress}, tokenURI: ${tokenURI}, event_id: ${eventIdForMint}`);
     const MINT_ENDPOINT = `${API_BASE_URL_V1}/api/certificate/mint`;
     const body = JSON.stringify({
-        user_address: userAddress, tokenURI: tokenURI, event_id: eventIdForMint,
+        user_address: userAddress, 
+        tokenURI: tokenURI, 
+        event_id: eventIdForMint,
     });
+    
     try {
-        const response = await fetch(MINT_ENDPOINT, { method: 'POST', body: body });
+        const response = await fetch(MINT_ENDPOINT, { 
+            method: 'POST', 
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: body 
+        });
         const result = await response.json();
         if (!response.ok) throw new Error(result.message || `Minting failed. Status: ${response.status}`);
-        return { message: result.message || 'Certificate minted.', transactionHash: result.transactionHash };
+        return { 
+            message: result.message || 'Certificate minted.', 
+            transactionHash: result.transactionHash 
+        };
     } catch (error) {
+        console.error("Mint certificate error:", error); 
         if (error instanceof Error) throw error;
-        throw new Error("Unknown minting error.");
+        throw new Error("An unknown error occurred during certificate minting.");
     }
 };

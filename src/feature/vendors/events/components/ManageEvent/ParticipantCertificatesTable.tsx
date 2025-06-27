@@ -59,7 +59,7 @@ export default function ParticipantCertificatesTable({
                             </td>
                         </tr>
                     ) : (
-                        whitelist.map((whUser) => {
+                        whitelist.map((whUser, index) => {
                             const userIsPresent = isUserConsideredPresent(whUser);
                             const certificateUploaded = !!uploadedCertificates[whUser.id]?.tokenURI;
                             const certificateMinted = !!mintedCertificates[whUser.id];
@@ -70,9 +70,10 @@ export default function ParticipantCertificatesTable({
                             const canMint = certificateUploaded && !certificateMinted && 
                                             eventStatus === 'minting' &&
                                             !isEventCanceled && !isProcessing;
-
+                            const key = `${whUser.id}-${index}`;    
                             return (
-                                <tr key={whUser.id}>
+                                
+                                <tr key={key}>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm font-medium text-gray-900">{whUser.name}</div>
                                         <div className="text-sm text-gray-500">{whUser.email}</div>
