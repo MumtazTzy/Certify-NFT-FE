@@ -22,9 +22,9 @@ export interface Certificate {
   id: number;
   event_id: number;
   user_id: number;
-  certificate_data: string; // JSON string, bisa di-parse jika perlu
-  mint_status: string;
-  mint_transaction_hash: string;
+  certificate_data: string;
+  mint_status: 'minted' | 'pending' | 'failed';
+  mint_transaction_hash?: string;
   created_at: string;
   updated_at: string;
   event_title: string;

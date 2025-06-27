@@ -84,7 +84,7 @@ export default function EventsPage() {
               <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as any)}
+                onChange={(e) => setStatusFilter(e.target.value as 'all' | 'upcoming' | 'ongoing' | 'ended' | 'canceled' | 'minting')}
                 className="appearance-none w-full pl-10 pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-700 font-semibold shadow-sm hover:border-blue-400 transition-all cursor-pointer"
               >
                 <option value="all">All Events</option>

@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { Calendar, Award, BarChart3, TrendingUp, User, CheckCircle, DoorOpen, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { Event, fetchUserEvents } from '../events/services/MyeventServices';
-import { Certificate, fetchCertificatesByWallet } from '../certificates/services/certificateService';
+import { Certificate } from '../certificates/types';
+import { fetchCertificatesByWallet } from '../certificates/services/certificateService';
 import { connectWallet, signMessage } from '../../auth/lib/wallet';
 import { loginWithWallet } from '../../auth/services/authServices';
 import { useState as useLocalState } from 'react';
@@ -76,15 +77,52 @@ export default function UserDashboard() {
 
   // Certificate Card
   const CertificateCard = ({ certificate }: { certificate: Certificate }) => (
-    <div className="bg-white p-4 rounded-lg shadow">
-      <h3 className="text-lg font-semibold">{certificate.event_title}</h3>
-      <p className="text-sm text-gray-500">{certificate.event_description}</p>
-      <a
-        href="#"
-        className="text-blue-600 hover:underline mt-2 block"
-      >
-        View Details
-      </a>
+    <div className="bg-white p-4 rounded-lg shadow border border-gray-200 hover:shadow-md transition-shadow">
+      <div className="flex items-start space-x-3">
+        <div className="flex-shrink-0">
+          <img 
+            src={certificate.event_picture} 
+            alt={certificate.event_title}
+            className="w-12 h-12 rounded-lg object-cover"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = 'https://via.placeholder.com/48x48?text=Event';
+            }}
+          />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-semibold text-gray-900 truncate">{certificate.event_title}</h3>
+          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{certificate.event_description}</p>
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-xs text-gray-400">
+              {new Date(certificate.event_start_date).toLocaleDateString()}
+            </span>
+            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+              certificate.mint_status === 'minted' ? 'bg-green-100 text-green-800' :
+              certificate.mint_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+              'bg-red-100 text-red-800'
+            }`}>
+              {certificate.mint_status.charAt(0).toUpperCase() + certificate.mint_status.slice(1)}
+            </span>
+          </div>
+          {certificate.mint_transaction_hash && (
+            <div className="mt-2">
+              <p className="text-xs text-gray-500">Transaction:</p>
+              <p className="text-xs text-blue-600 font-mono truncate">
+                {certificate.mint_transaction_hash}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="mt-3 pt-3 border-t border-gray-100">
+        <a
+          href="#"
+          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+        >
+          View Certificate →
+        </a>
+      </div>
     </div>
   );
 
@@ -225,14 +263,14 @@ export default function UserDashboard() {
           ) : (
             <div className="overflow-x-auto">
               {displayedEvents.length > 0 ? (
-                <table className="min-w-full bg-white rounded-xl shadow-lg">
-                  <thead>
+                <table className="w-full text-sm text-left text-gray-500">
+                  <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                     <tr>
-                      <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 border-b">Event</th>
-                      <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 border-b">Date</th>
-                      <th className="py-3 px-6 text-left text-sm font-semibold text-gray-700 border-b">Status</th>
-                      <th className="py-3 px-6 text-center text-sm font-semibold text-gray-700 border-b">View Detail</th>
-                      <th className="py-3 px-6 text-center text-sm font-semibold text-gray-700 border-b">Action</th>
+                      <th scope="col" className="px-6 py-3">Event</th>
+                      <th scope="col" className="px-6 py-3">Date</th>
+                      <th scope="col" className="px-6 py-3">Status</th>
+                      <th scope="col" className="px-6 py-3 text-center">View Detail</th>
+                      <th scope="col" className="px-6 py-3 text-center">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -244,14 +282,24 @@ export default function UserDashboard() {
                       const canAttend = event.status === 'ongoing' && !isAttended && !isWhitelist;
                       const canMint = (event.status === 'ended' || event.status === 'minting') && isAttended && !isMinted && !isWhitelist;
                       return (
-                        <tr key={event.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="py-4 px-6 font-medium text-gray-900">
+                        <tr key={event.id} className="bg-white border-b hover:bg-gray-50">
+                          <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
                             <div>{event.title}</div>
                             <div className="text-xs text-gray-500">{event.location}</div>
+                          </th>
+                          <td className="px-6 py-4">{new Date(event.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                              event.status === 'upcoming' ? 'bg-blue-100 text-blue-800' :
+                              event.status === 'ongoing' ? 'bg-green-100 text-green-800' :
+                              event.status === 'minting' ? 'bg-purple-100 text-purple-800' :
+                              event.status === 'ended' ? 'bg-gray-200 text-gray-800' :
+                              'bg-gray-200 text-gray-800'
+                            }`}>
+                              {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+                            </span>
                           </td>
-                          <td className="py-4 px-6 text-gray-600">{new Date(event.start_date).toLocaleDateString()}</td>
-                          <td className="py-4 px-6 text-gray-600 capitalize">{event.status}</td>
-                          <td className="py-4 px-6 text-center">
+                          <td className="px-6 py-4 text-center">
                             <Link
                               to={`/events/${event.id}`}
                               className="inline-block bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg font-semibold shadow-sm transition-colors"
@@ -259,35 +307,39 @@ export default function UserDashboard() {
                               View Detail
                             </Link>
                           </td>
-                          <td className="py-4 px-6 text-center space-x-2">
-                            {/* Attend Button */}
-                            {isAttended ? (
-                              <span className="inline-flex items-center justify-center bg-green-100 text-green-600 rounded-full p-2">
-                                <CheckCircle className="h-5 w-5" />
-                              </span>
-                            ) : (
-                              <button
-                                className={`inline-flex items-center justify-center bg-gray-100 hover:bg-blue-100 text-blue-600 rounded-full p-2 transition-colors
-                                  ${canAttend ? 'hover:animate-pulse' : 'opacity-50 cursor-not-allowed'}`}
-                                disabled={!canAttend}
-                                title={canAttend ? 'Attend Event' : 'Cannot attend yet'}
-                                onClick={() => setAttendanceModal({ open: true, eventId: event.id })}
-                              >
-                                <DoorOpen className="h-5 w-5" />
-                              </button>
-                            )}
-                            {/* Mint Button */}
-                            {isMinted ? (
-                              <span className="inline-flex items-center justify-center bg-green-100 text-green-600 rounded-full p-2"><CheckCircle className="h-5 w-5" /></span>
-                            ) : (
-                              <button
-                                className={`inline-flex items-center justify-center bg-gray-100 hover:bg-purple-100 text-purple-600 rounded-full p-2 transition-colors ${!canMint ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                disabled={!canMint}
-                                title={canMint ? 'Mint Certificate' : 'Cannot mint yet'}
-                              >
-                                <Award className="h-5 w-5" />
-                              </button>
-                            )}
+                          <td className="px-6 py-4">
+                            <div className="flex items-center justify-center space-x-3">
+                              {/* Attend Button */}
+                              {isAttended ? (
+                                <span className="inline-flex items-center justify-center bg-green-100 text-green-600 rounded-full p-2">
+                                  <CheckCircle className="h-5 w-5" />
+                                </span>
+                              ) : (
+                                <button
+                                  className={`inline-flex items-center justify-center bg-gray-100 text-blue-600 rounded-full p-2 transition-colors
+                                    ${canAttend ? 'animate-pulse' : 'opacity-50 cursor-not-allowed'}`}
+                                  disabled={!canAttend}
+                                  title={canAttend ? 'Attend Event' : 'Cannot attend yet'}
+                                  onClick={() => setAttendanceModal({ open: true, eventId: event.id })}
+                                >
+                                  <DoorOpen className={`h-5 w-5 ${canAttend ? 'animate-pulse text-green-600' : ''}`} />
+                                </button>
+                              )}
+                              {/* Mint Button */}
+                              {isMinted ? (
+                                <span className="inline-flex items-center justify-center bg-green-100 text-green-600 rounded-full p-2">
+                                  <CheckCircle className="h-5 w-5" />
+                                </span>
+                              ) : (
+                                <button
+                                  className={`inline-flex items-center justify-center bg-gray-100 hover:bg-purple-100 text-purple-600 rounded-full p-2 transition-colors ${!canMint ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                  disabled={!canMint}
+                                  title={canMint ? 'Mint Certificate' : 'Cannot mint yet'}
+                                >
+                                  <Award className="h-5 w-5" />
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );
@@ -295,7 +347,11 @@ export default function UserDashboard() {
                   </tbody>
                 </table>
               ) : (
-                <p className="text-gray-500">No events found.</p>
+                <div className="text-center py-12">
+                  <Calendar className="h-12 w-12 text-gray-400 mx-auto" />
+                  <h3 className="mt-4 text-lg font-semibold text-gray-800">No Events Found</h3>
+                  <p className="mt-1 text-gray-500">You haven't registered for any events yet.</p>
+                </div>
               )}
             </div>
           )}
