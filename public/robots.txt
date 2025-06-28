@@ -27,6 +27,5 @@ Disallow: /manage-event/
 Disallow: /view-whitelist/
 Disallow: /server-error
 
-# It's a good practice to have a sitemap.
-# You should generate a sitemap.xml and add its URL here.
-# Sitemap: https://your-domain.com/sitemap.xml 
+# Sitemap for better SEO
+Sitemap: https://certify.nft.gpadaka.com/sitemap.xml

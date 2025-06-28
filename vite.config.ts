@@ -10,4 +10,14 @@ export default defineConfig({
   preview: {
     allowedHosts: ['certify.nft.gpadaka.com'],
   },
+  // Ensure public files are copied to dist
+  publicDir: 'public',
+  build: {
+    // Ensure all public files are included
+    rollupOptions: {
+      input: {
+        main: 'index.html',
+      },
+    },
+  },
 });
