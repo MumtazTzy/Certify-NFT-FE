@@ -18,6 +18,15 @@ export default defineConfig({
       input: {
         main: 'index.html',
       },
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          icons: ['lucide-react'],
+          utils: ['react-hot-toast'],
+        },
+      },
     },
+    chunkSizeWarningLimit: 1000,
   },
 });

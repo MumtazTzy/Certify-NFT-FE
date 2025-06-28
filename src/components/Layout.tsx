@@ -26,7 +26,14 @@ export default function Layout() {
         {/* Konten header Anda tidak perlu diubah */}
         <div className="max-w-7xl mx-auto px-4 flex justify-between items-center h-16">
           <Link to="/" className="flex items-center space-x-2">
-            <img src="/assets/logo.webp" alt="logo" className="h-12" />
+            <img 
+              src="/assets/logo.webp" 
+              alt="Certify NFT Logo" 
+              className="h-12 w-12" 
+              width="48" 
+              height="48"
+              loading="eager"
+            />
             <span className="font-bold text-xl">Certify</span>
           </Link>
           <nav className="hidden md:flex flex-1 justify-center items-center space-x-6">

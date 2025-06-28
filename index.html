@@ -5,6 +5,14 @@
     <link rel="icon" type="image/svg+xml" href="/assets/favicon.webp"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/assets/main-zvN16p5W.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" href="/assets/main-B3Rw9INb.js" as="script">
+    <link rel="preload" href="/assets/logo.webp" as="image">
+    
+    <!-- Fallback for CSS -->
+    <noscript><link rel="stylesheet" href="/assets/main-zvN16p5W.css"></noscript>
+    
     <!-- Primary Meta Tags -->
     <title>Certify NFT - Blockchain Certificate Platform | Secure Digital Certificates</title>
     <meta name="title" content="Certify NFT - Blockchain Certificate Platform | Secure Digital Certificates">
@@ -64,9 +72,36 @@
       "keywords": "certify nft, blockchain certificate, digital certificate, nft certificate, event certificate, blockchain verification"
     }
     </script>
+    
+    <!-- Critical CSS inline -->
+    <style>
+      /* Critical CSS for above-the-fold content */
+      body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; }
+      .hero-section { background: linear-gradient(135deg, #dbeafe 0%, #ffffff 50%, #f3e8ff 100%); }
+      .hero-title { font-size: 2.5rem; font-weight: bold; color: #1f2937; }
+      .hero-subtitle { font-size: 1.25rem; color: #6b7280; }
+      .cta-button { background: #2563eb; color: white; padding: 1rem 2rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600; }
+      .logo { width: 6rem; height: 6rem; object-fit: contain; }
+    </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Defer non-critical JavaScript -->
+    <script>
+      // Load CSS asynchronously
+      function loadCSS(href) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = href;
+        document.head.appendChild(link);
+      }
+      
+      // Load main CSS after page load
+      window.addEventListener('load', function() {
+        loadCSS('/assets/main-zvN16p5W.css');
+      });
+    </script>
   </body>
 </html>

@@ -39,9 +39,10 @@ export default function Home() {
                     src="/assets/logo.webp"
                     alt="Certify NFT Logo"
                     className="h-24 w-24"
-                    width="1000"
-                    height="1510"
-                  />
+                    width="96"
+                    height="96"
+                    loading="eager"
+                />
               </div>
             </div>
             
