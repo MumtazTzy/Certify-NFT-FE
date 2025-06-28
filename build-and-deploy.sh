@@ -36,4 +36,4 @@ echo "🚀 Deploying to production..."
 
 echo "✅ Build and deploy process completed!"
 echo "🌐 Verify sitemap.xml at: https://certify.nft.gpadaka.com/sitemap.xml"
-echo "🌐 Verify robots.txt at: https://certify.nft.gpadaka.com/robots.txt" 
+echo "🌐 Verify robots.txt at: https://certify.nft.gpadaka.com/robots.txt"

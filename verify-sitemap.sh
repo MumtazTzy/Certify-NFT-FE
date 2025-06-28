@@ -30,4 +30,4 @@ echo " - HTTP status for robots.txt"
 echo "📋 Sitemap content preview:"
 curl -s https://certify.nft.gpadaka.com/sitemap.xml | head -10
 
-echo "🎯 Verification complete!" 
+echo "🎯 Verification complete!"
