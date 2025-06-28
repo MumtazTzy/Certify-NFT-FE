@@ -11,6 +11,14 @@ function MetadataModal({ open, onClose, url, txHash }: { open: boolean; onClose:
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Helper function to truncate long values
+  const truncateValue = (value: string, maxLength: number = 40) => {
+    if (value.length <= maxLength) return value;
+    const start = value.substring(0, 30);
+    const end = value.substring(value.length - 30);
+    return `${start}....${end}`;
+  };
+
   useEffect(() => {
     if (!open || !url) return;
     setMeta(null);
@@ -21,15 +29,22 @@ function MetadataModal({ open, onClose, url, txHash }: { open: boolean; onClose:
         if (!res.ok) throw new Error('Failed to fetch metadata');
         return res.json();
       })
-      .then(data => setMeta(data))
+      .then(data => {
+        // Add transaction hash to metadata object
+        const metadataWithTxHash = {
+          ...data,
+          transaction_hash: txHash
+        };
+        setMeta(metadataWithTxHash);
+      })
       .catch(err => setError(err.message || 'Failed to fetch metadata'))
       .finally(() => setLoading(false));
-  }, [open, url]);
+  }, [open, url, txHash]);
 
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      <div className="bg-white rounded-xl shadow-lg p-6 max-w-3xl w-full relative">
+      <div className="bg-white rounded-xl shadow-lg p-6 max-w-2xl w-full relative">
         <button onClick={onClose} className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl">&times;</button>
         <h2 className="text-lg font-bold mb-4">Certificate Metadata</h2>
         {loading && <div className="text-gray-500">Loading metadata...</div>}
@@ -39,27 +54,58 @@ function MetadataModal({ open, onClose, url, txHash }: { open: boolean; onClose:
             <tbody>
               <tr className="border-b">
                 <td className="font-semibold capitalize py-2 px-3 bg-gray-50 w-1/3 align-top">Metadata URL</td>
-                <td className="py-2 px-3 break-all">
-                  <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">{url}</a>
+                <td className="py-2 px-3">
+                  <a 
+                    href={url} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-blue-600 underline font-mono text-xs"
+                    title={url}
+                  >
+                    {truncateValue(url)}
+                  </a>
                 </td>
               </tr>
               {Object.entries(meta).map(([key, value]) => (
                 <tr key={key} className="border-b last:border-b-0">
-                  <td className="font-semibold capitalize py-2 px-3 bg-gray-50 w-1/3 align-top">{key}</td>
-                  <td className="py-2 px-3 break-all">
-                    {typeof value === 'string' && value.startsWith('ipfs://') ? (
-                      <a href={`https://ipfs.io/ipfs/${value.replace('ipfs://', '')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">{value}</a>
+                  <td className="font-semibold capitalize py-2 px-3 bg-gray-50 w-1/3 align-top">
+                    {key === 'transaction_hash' ? 'Transaction Hash' : key}
+                  </td>
+                  <td className="py-2 px-3">
+                    {key === 'transaction_hash' ? (
+                      <a
+                        href={`https://sepolia.etherscan.io/tx/${value}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 underline font-mono text-xs"
+                        title={String(value)}
+                      >
+                        {truncateValue(String(value))}
+                      </a>
+                    ) : typeof value === 'string' && value.startsWith('ipfs://') ? (
+                      <a 
+                        href={`https://ipfs.io/ipfs/${value.replace('ipfs://', '')}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-blue-600 underline font-mono text-xs"
+                        title={value}
+                      >
+                        {truncateValue(value)}
+                      </a>
                     ) : key === 'image' && typeof value === 'string' ? (
                       <a
                         href={value.startsWith('ipfs://') ? `https://ipfs.io/ipfs/${value.replace('ipfs://', '')}` : value}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 underline break-all"
+                        className="text-blue-600 underline font-mono text-xs"
+                        title={value}
                       >
-                        {value}
+                        {truncateValue(value)}
                       </a>
                     ) : (
-                      <span className="break-all">{String(value)}</span>
+                      <span className="font-mono text-xs" title={String(value)}>
+                        {(key === 'description' || key === 'user_address') ? String(value) : truncateValue(String(value))}
+                      </span>
                     )}
                   </td>
                 </tr>
@@ -67,17 +113,6 @@ function MetadataModal({ open, onClose, url, txHash }: { open: boolean; onClose:
             </tbody>
           </table>
         )}
-        <div className="mt-2">
-          <span className="font-semibold">Transaction Hash:</span>{' '}
-          <a
-            href={`https://sepolia.etherscan.io/tx/${txHash}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 underline break-all font-mono text-xs"
-          >
-            {txHash}
-          </a>
-        </div>
       </div>
     </div>
   );
