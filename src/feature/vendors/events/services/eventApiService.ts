@@ -45,11 +45,14 @@ const transformEventData = (eventDataFromApi: Record<string, unknown>): Event =>
         attendees: (eventDataFromApi.attendees as number) ?? 0,
         whitelisted: (eventDataFromApi.whitelisted as number) ?? 0, // Assuming API provides this for detailed event view
         certificates_minted: (eventDataFromApi.certificates_minted as number) ?? ((eventDataFromApi.minted as number) ?? 0),
-        certificate_uploaded: (eventDataFromApi.certificate_uploaded as boolean) ?? !!(eventDataFromApi.event_template_image_url as string),
+        certificate_uploaded: (eventDataFromApi.certificate_uploaded as boolean) ?? !!(eventDataFromApi.event_template_image_url as string || eventDataFromApi.url_certificate as string),
         
         event_template_image_url: eventDataFromApi.event_template_image_url as string ?? null,
         event_template_token_uri: eventDataFromApi.event_template_token_uri as string ?? null,
         event_template_original_filename: eventDataFromApi.event_template_original_filename as string ?? null,
+        
+        // Map url_certificate from API to urlCertificate in Event type
+        urlCertificate: eventDataFromApi.url_certificate as string ?? null,
         
         token: eventDataFromApi.token as string, // Mapped from API
         minting_active: (eventDataFromApi.minting_active as boolean) ?? false, // Remains, assuming it can be API-provided
@@ -85,7 +88,8 @@ export const updateEventStatusAPI = async (
     eventId: number,
     newStatus: EventStatus,
     vendorWalletAddress: string 
-): Promise<{ message: string; event: Event }> => {
+): Promise<{ message: string; event?: Event }> => {
+    console.log(`Updating event ${eventId} status to ${newStatus} for vendor ${vendorWalletAddress}`);
     const targetUrl = `${API_BASE_URL_V3}/api/events/${eventId}/update`;
 
     const requestPayload = {
@@ -93,33 +97,45 @@ export const updateEventStatusAPI = async (
         wallet_address: vendorWalletAddress,
     };
 
-    const response = await fetch(targetUrl, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-        },
-        body: JSON.stringify(requestPayload),
-    });
+    console.log('Request payload:', requestPayload);
 
-    const result = await response.json(); 
+    try {
+        const response = await fetch(targetUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify(requestPayload),
+        });
 
-    if (!response.ok) {
-        throw new Error(result.message || `API Error (${response.status}): Failed to update event status.`);
+        const result = await response.json(); 
+        console.log('API response:', result);
+
+        if (!response.ok) {
+            throw new Error(result.message || `API Error (${response.status}): Failed to update event status.`);
+        }
+        
+        // Handle case where API only returns message (no event data)
+        if (!result.event) {
+            console.log('API response does not include event data, returning message only');
+            return {
+                message: result.message || `Event status successfully updated to ${newStatus}`,
+            };
+        }
+        
+        // Transform the event data received in the response
+        const transformedEvent = transformEventData(result.event);
+        
+        return {
+            message: result.message,
+            event: transformedEvent, // Return transformed event
+        };
+    } catch (error) {
+        console.error('Error updating event status:', error);
+        if (error instanceof Error) throw error;
+        throw new Error("An unknown error occurred while updating event status.");
     }
-    
-    if (!result.event) {
-        // This case should ideally not happen if API guarantees 'event' field on success
-        throw new Error('API Error: Event data not found in successful update response.');
-    }
-    
-    // Transform the event data received in the response
-    const transformedEvent = transformEventData(result.event);
-    
-    return {
-        message: result.message,
-        event: transformedEvent, // Return transformed event
-    };
 };
 
 
@@ -191,4 +207,51 @@ export const mintCertificateAPI = async (
         if (error instanceof Error) throw error;
         throw new Error("An unknown error occurred during certificate minting.");
     }
+};
+
+export const getAttendanceStatus = async (
+    userWalletAddress: string,
+    eventId: number
+): Promise<{ attended: boolean }> => {
+    console.log(`Fetching attendance status for user ${userWalletAddress} in event ${eventId}`);
+    const ATTENDANCE_ENDPOINT = `${API_BASE_URL_V3}/api/users/${userWalletAddress}/events/${eventId}/attendance-status`;
+    
+    try {
+        const response = await fetch(ATTENDANCE_ENDPOINT, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+            },
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: `HTTP error ${response.status}` }));
+            throw new Error(errorData.message || `Failed to fetch attendance status. Status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        return { attended: result.attended };
+    } catch (error) {
+        console.error("Get attendance status error:", error);
+        if (error instanceof Error) throw error;
+        throw new Error("An unknown error occurred while fetching attendance status.");
+    }
+};
+
+// Convenience function for updating event to minting status
+export const startEventMinting = async (
+    eventId: number,
+    vendorWalletAddress: string
+): Promise<{ message: string; event?: Event }> => {
+    console.log(`Starting minting period for event ${eventId} by vendor ${vendorWalletAddress}`);
+    return updateEventStatusAPI(eventId, 'minting', vendorWalletAddress);
+};
+
+// Convenience function for ending event minting
+export const endEventMinting = async (
+    eventId: number,
+    vendorWalletAddress: string
+): Promise<{ message: string; event?: Event }> => {
+    console.log(`Ending minting period for event ${eventId} by vendor ${vendorWalletAddress}`);
+    return updateEventStatusAPI(eventId, 'ended', vendorWalletAddress);
 };

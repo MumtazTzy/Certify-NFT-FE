@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { WhitelistEntry } from '../types'; // Adjust path if necessary, e.g., '../../types' or '../types'
+import { getAttendanceStatus } from '../services/eventApiService';
 
 // Ensure WhitelistEntry matches what your API and UI expect.
 // It seems your API might return `wallet_address` and `created_at`.
@@ -44,16 +45,36 @@ export function useWhitelist(eventId: string | undefined) {
       const apiData = await response.json();
 
       if (Array.isArray(apiData)) {
-        const mappedData: WhitelistEntry[] = apiData.map((entry: any) => ({ // Use 'any' for entry if API structure is loose, or define an ApiWhitelistEntry type
+        // First, map the basic whitelist data
+        const basicMappedData: WhitelistEntry[] = apiData.map((entry: any) => ({
           id: String(entry.id),
           name: entry.name,
           email: entry.email,
           walletAddress: entry.wallet_address, // Map from snake_case
           registrationDate: entry.created_at, // Map from snake_case
           status: entry.status === 'approved' ? 'active' : 'revoked', // Adapt based on actual API status values
-          attendance: entry.attendance ?? null, // Assuming attendance might come from API
+          attendance: entry.attendance ?? null, // Keep existing attendance if available
         }));
-        setWhitelist(mappedData);
+
+        // Then, fetch attendance status for each user
+        const eventIdNumber = parseInt(eventId, 10);
+        const whitelistWithAttendance = await Promise.all(
+          basicMappedData.map(async (entry) => {
+            try {
+              const attendanceResult = await getAttendanceStatus(entry.walletAddress, eventIdNumber);
+              return {
+                ...entry,
+                attendance: attendanceResult.attended,
+              };
+            } catch (attendanceError) {
+              console.warn(`Failed to fetch attendance for user ${entry.walletAddress}:`, attendanceError);
+              // Keep the entry with existing attendance status or null
+              return entry;
+            }
+          })
+        );
+
+        setWhitelist(whitelistWithAttendance);
       } else if (apiData === null) {
         // API explicitly returned null, treat as empty
         console.warn("API response was null. Defaulting to an empty whitelist.");
@@ -83,6 +104,15 @@ export function useWhitelist(eventId: string | undefined) {
   const refreshWhitelist = useCallback(() => {
     fetchWhitelistData();
   }, [fetchWhitelistData]);
+
+  // Function to update attendance status for a specific user
+  const updateUserAttendance = useCallback(async (userId: string, attended: boolean) => {
+    setWhitelist(current =>
+      current.map(entry =>
+        entry.id === userId ? { ...entry, attendance: attended } : entry
+      )
+    );
+  }, []);
 
   // Example: revokeAccess - this is a client-side only update in your current code.
   // For a real revoke, you'd likely make an API call here and then refresh.
@@ -122,5 +152,5 @@ export function useWhitelist(eventId: string | undefined) {
     );
   }, [fetchWhitelistData, eventId]); // Added fetchWhitelistData and eventId if revoke becomes async
 
-  return { whitelist, loading, error, revokeAccess, refreshWhitelist };
+  return { whitelist, loading, error, revokeAccess, refreshWhitelist, updateUserAttendance };
 }

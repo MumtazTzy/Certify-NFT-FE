@@ -1,17 +1,20 @@
 // src/feature/vendors/events/components/EventDetailsDisplay.tsx
 import { Calendar, MapPin, Users, Award, Clock, FileText } from 'lucide-react';
+import TokenCard from './TokenCard';
 import { Event } from '../../types';
 
 interface EventDetailsDisplayProps {
     event: Event;
     uploadedCertificatesCount: number;
     mintedCertificatesCount: number;
+    eventToken?: string;
 }
 
 export default function EventDetailsDisplay({ 
     event, 
     uploadedCertificatesCount, 
-    mintedCertificatesCount 
+    mintedCertificatesCount,
+    eventToken
 }: EventDetailsDisplayProps) {
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('en-US', { 
@@ -124,8 +127,15 @@ export default function EventDetailsDisplay({
                         <div className="bg-emerald-50 rounded-lg p-4">
                             <div className="flex items-center justify-between">
                                 <span className="text-sm font-medium text-emerald-700">Prepared</span>
-                                <span className="text-lg font-bold text-emerald-800">{uploadedCertificatesCount}</span>
+                                <span className="text-lg font-bold text-emerald-800">
+                                    {event.certificate_uploaded || event.urlCertificate ? 'Available' : uploadedCertificatesCount}
+                                </span>
                             </div>
+                            {(event.certificate_uploaded || event.urlCertificate) && (
+                                <p className="text-xs text-emerald-600 mt-1">
+                                    {event.urlCertificate ? 'Event template' : 'Custom template'}
+                                </p>
+                            )}
                         </div>
                         
                         <div className="bg-blue-50 rounded-lg p-4">
@@ -136,16 +146,16 @@ export default function EventDetailsDisplay({
                         </div>
                     </div>
                     
-                    {uploadedCertificatesCount > 0 && (
+                    {(event.certificate_uploaded || event.urlCertificate) && (
                         <div className="mt-3">
                             <div className="bg-gray-200 rounded-full h-2">
                                 <div 
                                     className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                                    style={{ width: `${Math.min((mintedCertificatesCount / uploadedCertificatesCount) * 100, 100)}%` }}
+                                    style={{ width: `${Math.min((mintedCertificatesCount / (event.whitelisted || 1)) * 100, 100)}%` }}
                                 ></div>
                             </div>
                             <p className="text-xs text-gray-500 mt-1">
-                                {Math.round((mintedCertificatesCount / uploadedCertificatesCount) * 100)}% minted
+                                {Math.round((mintedCertificatesCount / (event.whitelisted || 1)) * 100)}% of registered users minted
                             </p>
                         </div>
                     )}
@@ -161,6 +171,12 @@ export default function EventDetailsDisplay({
                     </div>
                 </div>
             </div>
+            {/* Event Token Card */}
+            {eventToken && (
+                    <div className="mt-6">
+                        <TokenCard token={eventToken} />
+                    </div>
+                )}
             
             {/* Event Image Card */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">

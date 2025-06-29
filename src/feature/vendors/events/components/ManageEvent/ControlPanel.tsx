@@ -82,47 +82,82 @@ export default function EventControlPanel({
             
             {/* Action Buttons */}
             <div className="space-y-3">
-                {canStartOrReopenMinting && (
+                {/* Toggle Button for Minting/Ended */}
+                {(currentStatus === 'minting' || currentStatus === 'ended') && !isEventCanceled && (
+                    <button 
+                        onClick={() => onChangeEventStatus(currentStatus === 'minting' ? 'ended' : 'minting')} 
+                        className={`w-full inline-flex items-center justify-center space-x-3 px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-sm hover:shadow-md disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] ${
+                            currentStatus === 'minting' 
+                                ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white disabled:from-red-300 disabled:to-red-400' 
+                                : 'bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white disabled:from-purple-300 disabled:to-purple-400'
+                        }`}
+                        disabled={isProcessing}
+                    >
+                        {currentStatus === 'minting' ? (
+                            <>
+                                <StopCircle className="h-4 w-4" />
+                                <span>End Minting Period</span>
+                            </>
+                        ) : (
+                            <>
+                                <Play className="h-4 w-4" />
+                                <span>Re-open Minting Period</span>
+                            </>
+                        )}
+                    </button>
+                )}
+                
+                {/* Start Minting from other statuses */}
+                {canStartOrReopenMinting && currentStatus !== 'minting' && currentStatus !== 'ended' && (
                     <button 
                         onClick={() => onChangeEventStatus('minting')} 
                         className="w-full inline-flex items-center justify-center space-x-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-sm hover:shadow-md disabled:from-purple-300 disabled:to-purple-400 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
                         disabled={isProcessing}
                     >
                         <Play className="h-4 w-4" />
-                        <span>{currentStatus === 'ended' ? 'Re-open Minting Period' : 'Start Minting Period'}</span>
-                    </button>
-                )}
-                
-                {canEndMinting && (
-                    <button 
-                        onClick={() => onChangeEventStatus('ended')} 
-                        className="w-full inline-flex items-center justify-center space-x-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-sm hover:shadow-md disabled:from-red-300 disabled:to-red-400 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
-                        disabled={isProcessing}
-                    >
-                        <StopCircle className="h-4 w-4" />
-                        <span>End Minting Period</span>
+                        <span>Start Minting Period</span>
                     </button>
                 )}
             </div>
             
             {/* Status Messages */}
             <div className="mt-6 space-y-3">
-                {isEventEnded && !canStartOrReopenMinting && (
+                {currentStatus === 'minting' && (
+                    <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
+                        <div className="flex items-start space-x-3">
+                            <Settings className="h-5 w-5 text-purple-500 mt-0.5" />
+                            <div className="flex-1">
+                                <p className="text-sm font-medium text-purple-700">Minting Period Active</p>
+                                <p className="text-xs text-purple-600 mt-1">
+                                    Participants can now mint their certificates. Click "End Minting Period" when you want to close the minting phase.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                
+                {currentStatus === 'ended' && (
                     <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                         <div className="flex items-start space-x-3">
                             <CheckCircle className="h-5 w-5 text-gray-500 mt-0.5" />
                             <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-700">Event Completed</p>
+                                <p className="text-sm font-medium text-gray-700">Event Ended</p>
                                 <p className="text-xs text-gray-500 mt-1">
-                                    This event has ended successfully.
-                                    {!isEventCanceled && (
-                                        <button 
-                                            onClick={() => onChangeEventStatus('minting')} 
-                                            className="text-purple-600 hover:text-purple-700 font-medium ml-1 underline"
-                                        >
-                                            Re-open minting?
-                                        </button>
-                                    )}
+                                    The event has concluded. You can re-open the minting period if participants still need to mint certificates.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                
+                {currentStatus === 'ongoing' && (
+                    <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                        <div className="flex items-start space-x-3">
+                            <Play className="h-5 w-5 text-orange-500 mt-0.5" />
+                            <div className="flex-1">
+                                <p className="text-sm font-medium text-orange-700">Event in Progress</p>
+                                <p className="text-xs text-orange-600 mt-1">
+                                    The event is currently running. Minting will be available once the event finishes. Please wait for the event to complete.
                                 </p>
                             </div>
                         </div>
@@ -143,15 +178,15 @@ export default function EventControlPanel({
                     </div>
                 )}
                 
-                {!canStartOrReopenMinting && !canEndMinting && !isEventEnded && !isEventCanceled && currentStatus !== 'minting' && (
+                {!isEventCanceled && currentStatus !== 'minting' && currentStatus !== 'ended' && currentStatus !== 'ongoing' && (
                     <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                         <div className="flex items-start space-x-3">
                             <Settings className="h-5 w-5 text-blue-500 mt-0.5" />
                             <div className="flex-1">
-                                <p className="text-sm font-medium text-blue-700">Status Information</p>
+                                <p className="text-sm font-medium text-blue-700">Ready for Minting</p>
                                 <p className="text-xs text-blue-600 mt-1">
                                     Event is currently {currentStatus}. 
-                                    {(currentStatus === 'upcoming' || currentStatus === 'ongoing') 
+                                    {currentStatus === 'upcoming' 
                                         ? ' You can start the minting period when ready.' 
                                         : ' No manual status actions available at this stage.'
                                     }

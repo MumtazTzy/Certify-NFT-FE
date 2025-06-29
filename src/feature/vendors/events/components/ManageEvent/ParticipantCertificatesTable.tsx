@@ -1,18 +1,18 @@
 // src/feature/vendors/events/components/ParticipantCertificatesTable.tsx
-import { Loader2, UploadCloud, Sparkles, Users, Award, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { Loader2, Sparkles, Users, Award, AlertCircle, CheckCircle, Clock, UserCheck, UserX } from 'lucide-react';
 import { WhitelistEntry, EventStatus } from '../../types';
 
 interface ParticipantCertificatesTableProps {
     whitelist: WhitelistEntry[];
     whitelistLoading: boolean;
     whitelistError: string | null;
-    uploadedCertificates: Record<string, { tokenURI?: string; /* other fields */ }>;
-    mintedCertificates: Record<string, { /* fields */ }>;
+    uploadedCertificates: Record<string, { tokenURI?: string; filePath?: string; event_id_from_upload?: string }>;
+    mintedCertificates: Record<string, { transactionHash?: string; apiResponse?: Record<string, unknown> }>;
     eventStatus: EventStatus;
     isProcessing: boolean;
     isEventCanceled: boolean;
-    onOpenUploadModal: (user: WhitelistEntry) => void;
     onMintCertificate: (userId: string) => void;
+    onAttendanceUpdate?: (userId: string, attended: boolean) => void;
     isUserConsideredPresent: (user: WhitelistEntry) => boolean;
     getUserStatusNode: (user: WhitelistEntry) => React.ReactNode;
 }
@@ -26,8 +26,8 @@ export default function ParticipantCertificatesTable({
     eventStatus,
     isProcessing,
     isEventCanceled,
-    onOpenUploadModal,
     onMintCertificate,
+    onAttendanceUpdate,
     isUserConsideredPresent,
     getUserStatusNode,
 }: ParticipantCertificatesTableProps) {
@@ -91,6 +91,40 @@ export default function ParticipantCertificatesTable({
                 </div>
             </div>
             
+            {/* Certificate Status Alert */}
+            {eventStatus === 'minting' && (
+                <div className="mb-6">
+                    {Object.keys(uploadedCertificates).length === 0 && (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                            <div className="flex items-start space-x-3">
+                                <AlertCircle className="h-5 w-5 text-yellow-500 mt-0.5" />
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium text-yellow-700">No Certificates Uploaded</p>
+                                    <p className="text-xs text-yellow-600 mt-1">
+                                        No specific certificates have been uploaded for participants. 
+                                        You can either upload individual certificates or use the event-wide template.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {Object.keys(uploadedCertificates).length > 0 && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                            <div className="flex items-start space-x-3">
+                                <CheckCircle className="h-5 w-5 text-blue-500 mt-0.5" />
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium text-blue-700">Certificates Ready for Minting</p>
+                                    <p className="text-xs text-blue-600 mt-1">
+                                        {Object.keys(uploadedCertificates).length} participant(s) have certificates uploaded and are ready for minting.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+            
             {/* Table */}
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -106,6 +140,9 @@ export default function ParticipantCertificatesTable({
                                 Status
                             </th>
                             <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                Attendance
+                            </th>
+                            <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                 Certificate
                             </th>
                         </tr>
@@ -113,7 +150,7 @@ export default function ParticipantCertificatesTable({
                     <tbody className="bg-white divide-y divide-gray-100">
                         {whitelist.length === 0 ? (
                             <tr>
-                                <td colSpan={4} className="px-6 py-12">
+                                <td colSpan={5} className="px-6 py-12">
                                     <div className="text-center">
                                         <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
                                             <Users className="h-8 w-8 text-gray-400" />
@@ -135,9 +172,6 @@ export default function ParticipantCertificatesTable({
                                 const certificateUploaded = !!uploadedCertificates[whUser.id]?.tokenURI;
                                 const certificateMinted = !!mintedCertificates[whUser.id];
                                 
-                                const canUpload = userIsPresent && !certificateUploaded && 
-                                                !['canceled', 'upcoming'].includes(eventStatus) && 
-                                                !isProcessing;
                                 const canMint = certificateUploaded && !certificateMinted && 
                                                 eventStatus === 'minting' &&
                                                 !isEventCanceled && !isProcessing;
@@ -172,31 +206,80 @@ export default function ParticipantCertificatesTable({
                                         </td>
                                         
                                         <td className="px-6 py-4">
-                                            {certificateMinted ? (
+                                            {userIsPresent ? (
                                                 <div className="flex items-center space-x-2">
                                                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                        <Award className="h-3 w-3 mr-1" />
-                                                        Minted
+                                                        Present
                                                     </span>
-                                                </div>
-                                            ) : certificateUploaded ? (
-                                                <div className="flex items-center space-x-2">
-                                                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                                        <Sparkles className="h-3 w-3 mr-1" />
-                                                        Ready to Mint
-                                                    </span>
+                                                    {onAttendanceUpdate && (
+                                                        <button
+                                                            onClick={() => onAttendanceUpdate(whUser.id, false)}
+                                                            disabled={isProcessing}
+                                                            className="ml-2 p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                            title="Mark as absent"
+                                                        >
+                                                            <UserX className="h-4 w-4" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center space-x-2">
                                                     <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
                                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                                        <Clock className="h-3 w-3 mr-1" />
-                                                        Pending
+                                                        Absent
                                                     </span>
+                                                    {onAttendanceUpdate && (
+                                                        <button
+                                                            onClick={() => onAttendanceUpdate(whUser.id, true)}
+                                                            disabled={isProcessing}
+                                                            className="ml-2 p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
+                                                            title="Mark as present"
+                                                        >
+                                                            <UserCheck className="h-4 w-4" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             )}
+                                        </td>
+                                        
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center space-x-2">
+                                                {certificateMinted ? (
+                                                    <>
+                                                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                            <Award className="h-3 w-3 mr-1" />
+                                                            Minted
+                                                        </span>
+                                                    </>
+                                                ) : certificateUploaded ? (
+                                                    <>
+                                                        <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                                            <Sparkles className="h-3 w-3 mr-1" />
+                                                            Ready to Mint
+                                                        </span>
+                                                        {canMint && (
+                                                            <button
+                                                                onClick={() => onMintCertificate(whUser.id)}
+                                                                disabled={isProcessing}
+                                                                className="ml-2 px-3 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                                                            >
+                                                                Mint
+                                                            </button>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                            <Clock className="h-3 w-3 mr-1" />
+                                                            No Certificate
+                                                        </span>
+                                                    </>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 );

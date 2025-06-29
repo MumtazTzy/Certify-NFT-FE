@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link} from 'react-router-dom';
 import {
-    Loader2, AlertCircle, Sparkles, CheckCircle, Users, Info, UploadCloud, Replace
+    Loader2, AlertCircle, Sparkles, CheckCircle, Users, Info, UploadCloud, Clock
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -30,7 +30,6 @@ import EventControlPanel from '../components/ManageEvent/ControlPanel';
 import EventQuickActions from '../components/ManageEvent/QuickActions';
 import EventStatistics from '../components/ManageEvent/Statistics';
 import ParticipantCertificatesTable from '../components/ManageEvent/ParticipantCertificatesTable';
-import TokenCard from '../components/ManageEvent/TokenCard';
 
 // Interface for the successfully uploaded event-wide certificate data
 interface EventCertificateApiData {
@@ -45,7 +44,7 @@ export default function ManageEvent() {
     const { user } = useAuth();
 
     const eventIdAsNumber = eventIdParam ? parseInt(eventIdParam, 10) : null;
-    const { whitelist, loading: whitelistLoading, error: whitelistError, refreshWhitelist } = useWhitelist(eventIdParam || "");
+    const { whitelist, loading: whitelistLoading, error: whitelistError, refreshWhitelist, updateUserAttendance } = useWhitelist(eventIdParam || "");
 
     const [event, setEvent] = useState<Event | null>(null);
     const [loadingPage, setLoadingPage] = useState(true);
@@ -72,6 +71,11 @@ export default function ManageEvent() {
     const [fileToUpload, setFileToUpload] = useState<File | null>(null);
     const [uploadModalError, setUploadModalError] = useState<string | null>(null);
 
+    // States for minting confirmation
+    const [isMintConfirmModalOpen, setIsMintConfirmModalOpen] = useState(false);
+    const [mintTargetUser, setMintTargetUser] = useState<WhitelistEntry | null>(null);
+    const [mintCertificateType, setMintCertificateType] = useState<string>('');
+
     // General states
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false); // General processing for actions like status change, cancel, mint, per-user upload
@@ -93,6 +97,14 @@ export default function ManageEvent() {
                     originalFileName: data.event_template_original_filename || "template_from_server.jpg",
                     filePath: data.event_template_image_url,
                     tokenURI: data.event_template_image_url,
+                });
+            } else if (data.urlCertificate && data.certificate_uploaded) {
+                // Use urlCertificate from event detail if available
+                setEventCertificateDisplayInfo({
+                    file: null,
+                    originalFileName: "certificate_from_event_detail.jpg",
+                    filePath: data.urlCertificate,
+                    tokenURI: data.urlCertificate,
                 });
             } else {
                 // Pastikan state bersih jika tidak ada template di server
@@ -120,29 +132,64 @@ export default function ManageEvent() {
             toast.error("Event data or authentication is missing to change status."); return;
         }
         const currentStatus = event.status;
+        
+        // Prevent changes if event is canceled
         if (currentStatus === 'canceled') {
-            toast("Event is canceled and its status cannot be changed.", { icon: <Info className="text-blue-500" /> }); return;
+            toast("Event is canceled and its status cannot be changed.", { icon: <Info className="text-blue-500" /> }); 
+            return;
         }
-        if (currentStatus === 'ended' && newStatus !== 'minting') {
-            toast("Event has ended. Only re-opening for minting is allowed.", { icon: <Info className="text-blue-500" /> }); return;
+        
+        // Prevent minting during ongoing events
+        if (currentStatus === 'ongoing' && newStatus === 'minting') {
+            toast.error("Cannot start minting while event is ongoing. Please wait for the event to finish first.", { 
+                icon: <Clock className="text-orange-500" />,
+                duration: 4000
+            }); 
+            return;
         }
-        if (newStatus === 'minting') {
-            if (!['upcoming', 'ongoing', 'ended'].includes(currentStatus)) {
-                toast.error(`Cannot start/re-open minting period from current status: ${currentStatus}.`); return;
-            }
-        } else if (newStatus === 'ended') {
-            if (currentStatus !== 'minting') {
-                toast.error(`Event must be in 'minting' status to be marked as 'ended'. Current: ${currentStatus}`); return;
+        
+        // Handle minting <-> ended toggle
+        if ((currentStatus === 'minting' && newStatus === 'ended') || 
+            (currentStatus === 'ended' && newStatus === 'minting')) {
+            // This is a valid toggle, proceed
+        } else {
+            // For other status changes, apply the original validation logic
+            if (newStatus === 'minting') {
+                if (!['upcoming', 'ended'].includes(currentStatus)) {
+                    toast.error(`Cannot start/re-open minting period from current status: ${currentStatus}. Event must be finished first.`); 
+                    return;
+                }
+            } else if (newStatus === 'ended') {
+                if (currentStatus !== 'minting') {
+                    toast.error(`Event must be in 'minting' status to be marked as 'ended'. Current: ${currentStatus}`); 
+                    return;
+                }
             }
         }
 
         const originalStatus = event.status;
         setEvent(prev => prev ? { ...prev, status: newStatus } : null);
         setIsProcessing(true);
+        
         try {
             const result = await updateEventStatusAPI(eventIdAsNumber, newStatus, user.walletAddress);
-            toast.success(result.message || `Event status successfully updated to ${newStatus}.`);
-            setEvent(result.event);
+            
+            // Show appropriate success message based on the toggle
+            if (currentStatus === 'minting' && newStatus === 'ended') {
+                toast.success("Minting period ended successfully. Participants can no longer mint certificates.");
+            } else if (currentStatus === 'ended' && newStatus === 'minting') {
+                toast.success("Minting period re-opened successfully. Participants can now mint certificates.");
+            } else {
+                toast.success(result.message || `Event status successfully updated to ${newStatus}.`);
+            }
+            
+            // If API returned updated event data, use it; otherwise reload event data
+            if (result.event) {
+                setEvent(result.event);
+            } else {
+                // Reload event data to get the updated status
+                await loadEventData();
+            }
         } catch (err) {
             toast.error(err instanceof Error ? err.message : "Failed to update event status.");
             setEvent(prev => prev ? { ...prev, status: originalStatus } : null);
@@ -233,31 +280,20 @@ export default function ManageEvent() {
         setPendingEventCertificatePreviewFile(null);
     };
 
-    const handleReplaceEventCertificate = () => {
-        setEventCertificateDisplayInfo(null); // Clear current template
-        setEventCertificateUploadError(null);
-        // Trigger file input again
-        document.getElementById('event-certificate-upload-input')?.click();
-    };
-
-
     // --- Per-User Certificate Upload Logic (Modal Flow) ---
     const isUserConsideredPresent = (whEntry: WhitelistEntry): boolean => {
         if (!event) return false;
         if (whEntry.attendance === true) return true;
         if (whEntry.attendance === false) return false;
-        const canUploadBasedOnEventStatus: Event['status'][] = ['ongoing', 'minting', 'ended'];
-        return canUploadBasedOnEventStatus.includes(event.status);
+        // Allow uploads at any time, not just during specific event statuses
+        return true;
     };
 
-    const openUploadModal = (userForUpload: WhitelistEntry) => {
-        setUploadTargetUser(userForUpload);
-        setFileToUpload(null); setUploadModalError(null); setIsUploadModalOpen(true);
-    };
     const closeUploadModal = () => {
         setIsUploadModalOpen(false); setUploadTargetUser(null);
         setFileToUpload(null); setUploadModalError(null);
     };
+
     const handleFileSelectedForUpload = (file: File | null) => {
         setFileToUpload(file); setUploadModalError(null);
     };
@@ -302,12 +338,69 @@ export default function ManageEvent() {
         }
     };
 
+    // Function to handle attendance status updates
+    const handleAttendanceUpdate = async (userId: string, attended: boolean) => {
+        try {
+            await updateUserAttendance(userId, attended);
+            toast.success(`Attendance status updated for user.`);
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Failed to update attendance status.");
+        }
+    };
+
     // --- Minting Logic ---
     const handleMintCertificate = async (userId: string) => {
-        setIsProcessing(true); // Set general processing for minting this user
+        // Check if certificate is available before minting
+        const targetUser = whitelist.find(u => u.id === userId);
+        if (!targetUser) { toast.error("User not found."); return; }
+        
+        const userSpecificCert = uploadedCertificates[userId];
+        const hasEventTemplate = eventCertificateDisplayInfo?.tokenURI || event?.urlCertificate;
+        
+        // Show detailed alert if no certificate is available
+        if (!userSpecificCert?.tokenURI && !hasEventTemplate) {
+            toast.error(
+                `No certificate available for ${targetUser.name}. Please upload either:
+                • An event-wide certificate template, or
+                • A specific certificate for this user`,
+                {
+                    icon: <AlertCircle className="text-red-500" />,
+                    duration: 6000,
+                    style: {
+                        maxWidth: '400px',
+                        whiteSpace: 'pre-line'
+                    }
+                }
+            );
+            return;
+        }
+        
+        // Show warning if using event template instead of user-specific
+        if (!userSpecificCert?.tokenURI && hasEventTemplate) {
+            toast(
+                `Using event template for ${targetUser.name}. Consider uploading a specific certificate for better personalization.`,
+                {
+                    icon: <Info className="text-blue-500" />,
+                    duration: 4000
+                }
+            );
+        }
+        
+        // Set up confirmation modal
+        const certificateType = userSpecificCert?.tokenURI ? "user-specific" : "event template";
+        setMintTargetUser(targetUser);
+        setMintCertificateType(certificateType);
+        setIsMintConfirmModalOpen(true);
+    };
+
+    const handleConfirmMint = async () => {
+        if (!mintTargetUser) return;
+        
+        const userId = mintTargetUser.id;
+        setIsMintConfirmModalOpen(false);
+        setIsProcessing(true);
+        
         try {
-            const targetUser = whitelist.find(u => u.id === userId);
-            if (!targetUser) { toast.error("User not found."); return; }
             if (!event || !eventIdAsNumber) { toast.error("Event data not loaded."); return; }
             if (event.status !== 'minting') {
                 toast.error(`Minting is only allowed when the event is in 'minting' period. Current status: ${event.status}`); return;
@@ -319,9 +412,13 @@ export default function ManageEvent() {
 
             if (userSpecificCert?.tokenURI) {
                 tokenToMint = userSpecificCert.tokenURI;
-                toast.success(`Using specific certificate for ${targetUser.name}.`);
+                toast.success(`Using specific certificate for ${mintTargetUser.name}.`);
             } else if (eventCertificateDisplayInfo?.tokenURI) {
                 tokenToMint = eventCertificateDisplayInfo.tokenURI;
+            } else if (event?.urlCertificate) {
+                // Use urlCertificate from event detail as fallback
+                tokenToMint = event.urlCertificate;
+                toast.success(`Using event certificate template for ${mintTargetUser.name}.`);
             } else {
                 toast.error("No certificate available for minting. Please upload an event-wide template or a specific one for this user.");
                 return;
@@ -333,7 +430,7 @@ export default function ManageEvent() {
             }
 
             const mintResult = await mintCertificateAPI(
-                targetUser.walletAddress,
+                mintTargetUser.walletAddress,
                 tokenToMint,
                 String(eventIdAsNumber)
             );
@@ -343,7 +440,7 @@ export default function ManageEvent() {
                     transactionHash: mintResult.transactionHash, apiResponse: mintResult
                 }
             }));
-            toast.success(mintResult.message || `Certificate for ${targetUser.name} minted!`);
+            toast.success(mintResult.message || `Certificate for ${mintTargetUser.name} minted!`);
             
             // Optimistically update event's minted count or reload event data
             setEvent(prevEvent => {
@@ -363,13 +460,12 @@ export default function ManageEvent() {
         }
     };
 
-
     const getUserStatusNode = (whEntry: WhitelistEntry): React.ReactNode => {
         const userId = whEntry.id;
         if (mintedCertificates[userId]?.transactionHash) {
             return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 mr-1" />Minted</span>;
         }
-        if (uploadedCertificates[userId]?.tokenURI || eventCertificateDisplayInfo?.tokenURI) { // Check both specific and event-wide
+        if (uploadedCertificates[userId]?.tokenURI || eventCertificateDisplayInfo?.tokenURI || event?.urlCertificate) { // Check specific, event-wide, and event detail certificate
             // More specific status if only event-wide is available vs user-specific
             let bgColor = "bg-purple-100";
             let textColor = "text-purple-800";
@@ -378,7 +474,11 @@ export default function ManageEvent() {
                 text = "Ready to Mint (Event Template)";
                 bgColor = "bg-indigo-100"; // Different color for event template
                 textColor = "text-indigo-800";
-            } else if (!uploadedCertificates[userId]?.tokenURI && !eventCertificateDisplayInfo?.tokenURI) {
+            } else if (!uploadedCertificates[userId]?.tokenURI && !eventCertificateDisplayInfo?.tokenURI && event?.urlCertificate) {
+                text = "Ready to Mint (Event Detail)";
+                bgColor = "bg-blue-100"; // Different color for event detail certificate
+                textColor = "text-blue-800";
+            } else if (!uploadedCertificates[userId]?.tokenURI && !eventCertificateDisplayInfo?.tokenURI && !event?.urlCertificate) {
                  // Fallback if somehow this condition is met incorrectly (should be caught by mint logic)
                  return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Needs Cert</span>;
             }
@@ -421,8 +521,9 @@ export default function ManageEvent() {
     const isEventEnded = event.status === 'ended';
     const isEventInMintingPeriod = event.status === 'minting';
 
-    const canStartOrReopenMinting = (event.status === 'ongoing' || event.status === 'upcoming' || event.status === 'ended') && !isEventCanceled;
-    const canEndMinting = isEventInMintingPeriod && !isEventCanceled;
+    // Simplified logic for toggle functionality
+    const canToggleMinting = (event.status === 'minting' || event.status === 'ended') && !isEventCanceled;
+    const canStartMinting = event.status === 'upcoming' && !isEventCanceled;
 
     return (
         <>
@@ -442,14 +543,15 @@ export default function ManageEvent() {
                             event={event}
                             uploadedCertificatesCount={Object.keys(uploadedCertificates).length}
                             mintedCertificatesCount={event.certificates_minted ?? Object.keys(mintedCertificates).length}
+                            eventToken={event.token}
                         />
 
                         <div className="space-y-6">
                             <EventControlPanel
                                 currentStatus={event.status}
                                 isProcessing={isProcessing}
-                                canStartOrReopenMinting={canStartOrReopenMinting}
-                                canEndMinting={canEndMinting}
+                                canStartOrReopenMinting={canToggleMinting || canStartMinting}
+                                canEndMinting={isEventInMintingPeriod && !isEventCanceled}
                                 isEventEnded={isEventEnded}
                                 isEventCanceled={isEventCanceled}
                                 onChangeEventStatus={handleChangeEventStatus}
@@ -460,7 +562,7 @@ export default function ManageEvent() {
                                 whitelistCount={event.whitelisted ?? whitelist.length ?? 0}
                                 renderUploadCertificateButton={
                                     <div className="flex flex-col items-center w-full">
-                                        {!eventCertificateDisplayInfo ? (
+                                        {!eventCertificateDisplayInfo && !event?.urlCertificate ? (
                                             <button
                                                 onClick={() => document.getElementById('event-certificate-upload-input')?.click()}
                                                 disabled={isProcessingEventCertUpload || isEventCanceled}
@@ -477,24 +579,17 @@ export default function ManageEvent() {
                                             <div className="w-full p-4 border border-green-300 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl text-center">
                                                 <div className="flex items-center justify-center text-green-700 mb-3">
                                                     <CheckCircle className="h-5 w-5 mr-2 text-green-600" />
-                                                    <span className="font-semibold text-sm">Template Uploaded</span>
+                                                    <span className="font-semibold text-sm">Template Available</span>
                                                 </div>
-                                                <p className="text-xs text-gray-600 truncate mb-3" title={eventCertificateDisplayInfo.originalFileName}>
-                                                    {eventCertificateDisplayInfo.originalFileName}
+                                                <p className="text-xs text-gray-600 truncate mb-3" title={eventCertificateDisplayInfo?.originalFileName || "Certificate from Event Detail"}>
+                                                    {eventCertificateDisplayInfo?.originalFileName || "Certificate from Event Detail"}
                                                 </p>
                                                 <img
-                                                    src={eventCertificateDisplayInfo.filePath}
+                                                    src={eventCertificateDisplayInfo?.filePath || event?.urlCertificate}
                                                     alt="Certificate Template Preview"
                                                     className="rounded-lg shadow-sm max-h-32 border border-gray-200 object-contain mx-auto mb-3"
                                                     style={{ maxWidth: 160 }}
                                                 />
-                                                <button
-                                                    onClick={handleReplaceEventCertificate}
-                                                    disabled={isProcessingEventCertUpload || isEventCanceled}
-                                                    className="w-full text-xs px-3 py-2 rounded-lg font-medium transition-all duration-200 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
-                                                >
-                                                    <Replace className="h-4 w-4 mr-1 inline"/> Replace Template
-                                                </button>
                                             </div>
                                         )}
                                         
@@ -524,8 +619,6 @@ export default function ManageEvent() {
                                 registrationRate={registrationRate}
                                 spotsRemaining={spotsRemaining}
                             />
-                            
-                            {event?.token && <TokenCard token={event.token} />}
                         </div>
                     </div>
 
@@ -538,8 +631,8 @@ export default function ManageEvent() {
                         eventStatus={event.status}
                         isProcessing={isProcessing}
                         isEventCanceled={isEventCanceled}
-                        onOpenUploadModal={openUploadModal}
                         onMintCertificate={handleMintCertificate}
+                        onAttendanceUpdate={handleAttendanceUpdate}
                         isUserConsideredPresent={isUserConsideredPresent}
                         getUserStatusNode={getUserStatusNode}
                     />
@@ -634,6 +727,22 @@ export default function ManageEvent() {
                         </div>
                     </div>
                 </Modal>
+            )}
+
+            {isMintConfirmModalOpen && (
+                <ConfirmationModal
+                    isOpen={isMintConfirmModalOpen}
+                    onClose={() => setIsMintConfirmModalOpen(false)}
+                    onConfirm={handleConfirmMint}
+                    title="Confirm Certificate Minting"
+                    message={`Are you sure you want to mint a certificate for ${mintTargetUser?.name}?
+
+Certificate Type: ${mintCertificateType}
+${mintCertificateType === 'user-specific' ? '✅ Using personalized certificate for this user' : '⚠️ Using event-wide template (consider uploading specific certificate for better personalization)'}
+
+This action will create an NFT certificate on the blockchain.`}
+                    isProcessing={isProcessing}
+                />
             )}
         </>
     );
