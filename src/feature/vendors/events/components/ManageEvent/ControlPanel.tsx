@@ -107,7 +107,7 @@ export default function EventControlPanel({
                     </button>
                 )}
                 
-                {/* Start Minting from other statuses */}
+                Start Minting from other statuses
                 {canStartOrReopenMinting && currentStatus !== 'minting' && currentStatus !== 'ended' && (
                     <button 
                         onClick={() => onChangeEventStatus('minting')} 
@@ -163,6 +163,7 @@ export default function EventControlPanel({
                         </div>
                     </div>
                 )}
+                
                 
                 {isEventCanceled && (
                     <div className="bg-red-50 border border-red-200 rounded-xl p-4">
