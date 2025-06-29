@@ -17,6 +17,7 @@ import StatusCard from '../components/StatusCard'; // Asumsi path benar
 import EventStatsCard from '../components/EventStatsCard'; // Asumsi path benar
 import ShareCard from '../components/ShareCard'; // Asumsi path benar
 import { cancelWhitelist } from '../../whitelist/services/WhitelistServices'; // Asumsi path benar
+import { fetchWhitelistStatus, isUserAsAttended } from '../services/AttendanceService';
 
 import { useAuth } from '../../../auth/hooks/useAuth';
 import ConfirmationModal from '../../../../components/ConfirmationModal'; // Asumsi path benar
@@ -96,6 +97,18 @@ const EventDetail: React.FC = () => {
       setLoading(false);
     }
   }, [eventId, loadEventData]); // loadEventData dimasukkan sebagai dependency
+
+  useEffect(() => {
+    if (!user?.walletAddress || !eventId) return;
+    // Fetch whitelist status
+    fetchWhitelistStatus(user.walletAddress, eventId)
+      .then(data => setIsCurrentUserWhitelisted(data.whitelisted))
+      .catch(() => setIsCurrentUserWhitelisted(false));
+    // Fetch attendance status
+    isUserAsAttended(user.walletAddress, eventId)
+      .then(data => setIsCurrentUserAttended(data.attended))
+      .catch(() => setIsCurrentUserAttended(false));
+  }, [user?.walletAddress, eventId]);
 
   // Handler untuk konfirmasi pembatalan whitelist
   const handleConfirmCancelWhitelist = async () => {

@@ -56,3 +56,24 @@ export async function attendEventWithToken(event_token: string, wallet_address: 
     }
 }
 
+export async function fetchWhitelistStatus(wallet_address: string, eventId: string): Promise<{ whitelisted: boolean }> {
+    const API_BASE_URL = 'https://api.gpadaka.com/api3/api';
+    const endpoint = `${API_BASE_URL}/users/${wallet_address}/events/${eventId}/whitelist-status`;
+    try {
+        const response = await fetch(endpoint, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || "Failed to get whitelist status.");
+        }
+        return data;
+    } catch (error) {
+        console.error("Error in fetchWhitelistStatus:", error);
+        throw error;
+    }
+}
+

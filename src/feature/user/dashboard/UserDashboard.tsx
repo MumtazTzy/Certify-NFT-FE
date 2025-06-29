@@ -385,11 +385,19 @@ export default function UserDashboard() {
                                 <span className="inline-flex items-center justify-center bg-green-100 text-green-600 rounded-full p-2">
                                   <CheckCircle className="h-5 w-5" />
                                 </span>
+                              ) : canMint ? (
+                                <Link
+                                  to={`/mint/${event.id}`}
+                                  className="inline-flex items-center justify-center bg-gray-100 hover:bg-purple-100 text-purple-600 rounded-full p-2 transition-colors"
+                                  title="Mint Certificate"
+                                >
+                                  <Award className="h-5 w-5" />
+                                </Link>
                               ) : (
                                 <button
-                                  className={`inline-flex items-center justify-center bg-gray-100 hover:bg-purple-100 text-purple-600 rounded-full p-2 transition-colors ${!canMint ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                  disabled={!canMint}
-                                  title={canMint ? 'Mint Certificate' : 'Cannot mint yet'}
+                                  className="inline-flex items-center justify-center bg-gray-100 text-purple-600 rounded-full p-2 opacity-50 cursor-not-allowed"
+                                  disabled
+                                  title={!isAttended ? 'You must attend the event first' : 'Cannot mint yet'}
                                 >
                                   <Award className="h-5 w-5" />
                                 </button>
