@@ -34,7 +34,7 @@ export default function Layout() {
               height="48"
               loading="eager"
             />
-            <span className="font-bold text-xl">Certify</span>
+            <span className="font-bold text-xl">Certify-NFT</span>
           </Link>
           <nav className="hidden md:flex flex-1 justify-center items-center space-x-6">
             {navLinks.map(link => (
@@ -70,7 +70,7 @@ export default function Layout() {
       </main>
 
       <footer className="bg-white border-t py-8 text-center text-gray-500">
-        © 2025 Certify. All rights reserved.
+        © 2025 WLNO-Certify. All rights reserved.
       </footer>
       
       <Toaster position="top-center" />
