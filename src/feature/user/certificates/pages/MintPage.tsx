@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Wallet, Award, CheckCircle, ArrowLeft, ExternalLink } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { Award, ExternalLink, ArrowLeft, CheckCircle, Wallet } from 'lucide-react';
 import { useAuth } from '../../../auth/hooks/useAuth';
 import { fetchEventById } from '../../events/services/EventdetailServices';
 
@@ -9,6 +9,7 @@ interface Certificate {
   id?: string;
   // tambahkan properti lain sesuai kebutuhan
 }
+
 interface EventType {
   title?: string;
   organizer?: string;
@@ -18,15 +19,15 @@ interface EventType {
 }
 
 export default function MintPage() {
-  const { eventId } = useParams();
-  const [isMinting, setIsMinting] = useState(false);
-  const [isMinted, setIsMinted] = useState(false);
-  const [mintedCertificate, setMintedCertificate] = useState<Certificate | null>(null);
+  const { eventId } = useParams<{ eventId: string }>();
+  const { walletAddress } = useAuth();
   const [event, setEvent] = useState<EventType | null>(null);
   const [loadingEvent, setLoadingEvent] = useState(true);
   const [eventError, setEventError] = useState<string | null>(null);
+  const [isMinting, setIsMinting] = useState(false);
+  const [isMinted, setIsMinted] = useState(false);
+  const [mintedCertificate, setMintedCertificate] = useState<Certificate | null>(null);
   const [mintError, setMintError] = useState<string | null>(null);
-  const { walletAddress } = useAuth();
 
   useEffect(() => {
     if (!eventId) return;
@@ -85,22 +86,21 @@ export default function MintPage() {
                 <Award className="h-12 w-12 mx-auto mb-3 opacity-90" />
                 <h3 className="font-bold text-lg">{event.title}</h3>
                 <p className="text-sm opacity-90 mb-2">Certificate of Completion</p>
-                <p className="text-xs opacity-75">Token ID: #{mintedCertificate.tokenId || mintedCertificate.id}</p>
               </div>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <Link to="/my-certificates" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2">
                 <Award className="h-5 w-5" />
                 <span>View My Certificates</span>
               </Link>
-              {mintedCertificate.tokenId && (
+              {mintedCertificate?.tokenId && (
                 <Link to={`/verify/${mintedCertificate.tokenId}`} className="w-full border border-gray-300 hover:border-blue-600 text-gray-700 hover:text-blue-600 py-3 px-4 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2">
                   <ExternalLink className="h-5 w-5" />
                   <span>Verify Certificate</span>
                 </Link>
               )}
-              <Link to="/events" className="w-full text-gray-600 hover:text-blue-600 py-3 px-4 rounded-lg font-semibold transition-colors">
-                Browse More Events
+              <Link to="/events" className="w-full border border-gray-300 hover:border-gray-300 text-gray-600 hover:text-blue-600 py-3 px-4 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2">
+                <span>Browse More Events</span>
               </Link>
             </div>
           </div>
@@ -126,7 +126,6 @@ export default function MintPage() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Mint Your Certificate</h1>
             <p className="text-gray-600">Enter your token code to mint your NFT certificate</p>
           </div>
-          {/* Event Preview */}
           <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 text-white mb-6">
             <div className="text-center">
               <Award className="h-10 w-10 mx-auto mb-3 opacity-90" />
@@ -136,7 +135,6 @@ export default function MintPage() {
             </div>
           </div>
           <form onSubmit={handleMint} className="space-y-6">
-            {/* Wallet Connection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Wallet Connection</label>
               {walletAddress ? (
@@ -158,7 +156,6 @@ export default function MintPage() {
               )}
             </div>
 
-            {/* Event Info */}
             <div className="bg-gray-50 rounded-xl p-4">
               <h3 className="font-semibold text-gray-900 mb-2">Event Details</h3>
               <div className="space-y-1 text-sm text-gray-600">
@@ -168,7 +165,6 @@ export default function MintPage() {
                 <p><span className="font-medium">Organizer:</span> {event.organizer}</p>
               </div>
             </div>
-            {/* Minting Process */}
             {isMinting && (
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                 <div className="flex items-center space-x-3">
@@ -181,7 +177,6 @@ export default function MintPage() {
               </div>
             )}
             {mintError && <div className="text-red-600 text-sm">{mintError}</div>}
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={!walletAddress || isMinting}
@@ -190,7 +185,6 @@ export default function MintPage() {
               {isMinting ? 'Minting...' : 'Mint Certificate'}
             </button>
           </form>
-          {/* Help */}
           <div className="text-center mt-6 pt-6 border-t border-gray-200">
             <p className="text-sm text-gray-600">
               Can't mint ?{' '}
