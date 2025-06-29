@@ -3,13 +3,28 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Award, Calendar } from 'lucide-react';
 import { useAuth } from '../../../auth/hooks/useAuth';
-import { Certificate, fetchCertificatesByWallet } from '../services/certificateService';
+import { fetchCertificatesByWallet } from '../services/certificateService';
 
 // Modal metadata dengan fetch detail
-function MetadataModal({ open, onClose, url, txHash }: { open: boolean; onClose: () => void; url: string; txHash: string }) {
+function MetadataModal({ 
+  open, 
+  onClose, 
+  url, 
+  txHash, 
+  walletAddress,
+  userCertificates 
+}: { 
+  open: boolean; 
+  onClose: () => void; 
+  url: string; 
+  txHash: string;
+  walletAddress: string;
+  userCertificates: any[];
+}) {
   const [meta, setMeta] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tokenId, setTokenId] = useState<string | null>(null);
 
   // Helper function to truncate long values
   const truncateValue = (value: string, maxLength: number = 40) => {
@@ -24,6 +39,9 @@ function MetadataModal({ open, onClose, url, txHash }: { open: boolean; onClose:
     setMeta(null);
     setError(null);
     setLoading(true);
+    setTokenId(null);
+    
+    // Fetch metadata
     fetch(url)
       .then(res => {
         if (!res.ok) throw new Error('Failed to fetch metadata');
@@ -41,6 +59,24 @@ function MetadataModal({ open, onClose, url, txHash }: { open: boolean; onClose:
       .finally(() => setLoading(false));
   }, [open, url, txHash]);
 
+  // Find matching tokenId from pre-fetched certificates
+  useEffect(() => {
+    if (!open || !userCertificates.length || !meta) return;
+    
+    // Match langsung dari data yang sudah ada
+    const matchingCert = userCertificates.find(cert => {
+      const certTokenURI = cert.tokenURI.startsWith('ipfs://') 
+        ? `https://${cert.tokenURI.replace('ipfs://', '')}.ipfs.w3s.link/`
+        : cert.tokenURI;
+      
+      return certTokenURI === url;
+    });
+    
+    if (matchingCert) {
+      setTokenId(matchingCert.tokenId);
+    }
+  }, [open, userCertificates, meta, url]);
+
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
@@ -52,6 +88,19 @@ function MetadataModal({ open, onClose, url, txHash }: { open: boolean; onClose:
         {meta && (
           <table className="w-full text-sm mb-4 border border-gray-200 rounded-lg overflow-hidden">
             <tbody>
+              <tr className="border-b">
+                <td className="font-semibold capitalize py-2 px-3 bg-gray-50 w-1/3 align-top">Token ID</td>
+                <td className="py-2 px-3">
+                  {tokenId ? (
+                    <span className="font-mono text-xs">{tokenId}</span>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-purple-600"></div>
+                      <span className="text-gray-400 text-xs">Finding token...</span>
+                    </div>
+                  )}
+                </td>
+              </tr>
               <tr className="border-b">
                 <td className="font-semibold capitalize py-2 px-3 bg-gray-50 w-1/3 align-top">Metadata URL</td>
                 <td className="py-2 px-3">
@@ -122,6 +171,7 @@ export default function MyCertificatesPage() {
   const { isAuthenticated, walletAddress, login } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [userCertificates, setUserCertificates] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalUrl, setModalUrl] = useState<string | null>(null);
 
@@ -131,11 +181,18 @@ export default function MyCertificatesPage() {
     const load = async () => {
       setLoading(true);
       try {
-        const data = await fetchCertificatesByWallet(walletAddress);
-        setCertificates(Array.isArray(data) ? data : []);
+        // Fetch kedua data sekaligus untuk performa optimal
+        const [certData, userCertData] = await Promise.all([
+          fetchCertificatesByWallet(walletAddress),
+          fetch(`https://api.gpadaka.com/api1/api/certificate/${walletAddress}`).then(res => res.json())
+        ]);
+        
+        setCertificates(Array.isArray(certData) ? certData : []);
+        setUserCertificates(userCertData.certificates || []);
       } catch (err) {
         console.error('Failed to fetch certificates:', err);
         setCertificates([]);
+        setUserCertificates([]);
       } finally {
         setLoading(false);
       }
@@ -201,6 +258,8 @@ export default function MyCertificatesPage() {
             onClose={() => setModalUrl(null)}
             url={modalUrl ? modalUrl.split('|')[0] : ''}
             txHash={modalUrl ? modalUrl.split('|')[1] : ''}
+            walletAddress={walletAddress || ''}
+            userCertificates={userCertificates}
           />
         </div>
       ) : (
