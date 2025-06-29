@@ -1,16 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Wallet, Award, CheckCircle, ArrowLeft, Key, ExternalLink } from 'lucide-react';
-import { useAuth } from '../../auth/hooks/useAuth';
-import { fetchEventById } from '../../user/events/services/EventdetailServices';
+import { Wallet, Award, CheckCircle, ArrowLeft, ExternalLink } from 'lucide-react';
+import { useAuth } from '../../../auth/hooks/useAuth';
+import { fetchEventById } from '../../events/services/EventdetailServices';
+
+interface Certificate {
+  tokenId?: string;
+  id?: string;
+  // tambahkan properti lain sesuai kebutuhan
+}
+interface EventType {
+  title?: string;
+  organizer?: string;
+  start_date?: string;
+  date?: string;
+  location?: string;
+}
 
 export default function MintPage() {
   const { eventId } = useParams();
-  const [tokenCode, setTokenCode] = useState('');
   const [isMinting, setIsMinting] = useState(false);
   const [isMinted, setIsMinted] = useState(false);
-  const [mintedCertificate, setMintedCertificate] = useState<any>(null);
-  const [event, setEvent] = useState<any>(null);
+  const [mintedCertificate, setMintedCertificate] = useState<Certificate | null>(null);
+  const [event, setEvent] = useState<EventType | null>(null);
   const [loadingEvent, setLoadingEvent] = useState(true);
   const [eventError, setEventError] = useState<string | null>(null);
   const [mintError, setMintError] = useState<string | null>(null);
@@ -29,20 +41,23 @@ export default function MintPage() {
   const handleMint = async (e: React.FormEvent) => {
     e.preventDefault();
     setMintError(null);
-    if (!walletAddress || !tokenCode || !eventId) return;
+    if (!walletAddress || !eventId) return;
     setIsMinting(true);
     try {
-      const res = await fetch('https://api.gpadaka.com/api3/api/certificates/mint', {
+      const res = await fetch('https://api.gpadaka.com/api1/api/certificate/mint', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ eventId, tokenCode }),
+        body: JSON.stringify({
+          user_address: walletAddress,
+          event_id: Number(eventId)
+        }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Mint failed.');
+      if (!res.ok) throw new Error((data as { message?: string }).message || 'Mint failed.');
       setIsMinted(true);
-      setMintedCertificate(data);
-    } catch (err: any) {
-      setMintError(err.message || 'Mint failed.');
+      setMintedCertificate(data as Certificate);
+    } catch (err: unknown) {
+      setMintError(err instanceof Error ? err.message : 'Mint failed.');
     } finally {
       setIsMinting(false);
     }
@@ -142,29 +157,13 @@ export default function MintPage() {
                 </div>
               )}
             </div>
-            {/* Token Code Input */}
-            <div>
-              <label htmlFor="tokenCode" className="block text-sm font-medium text-gray-700 mb-2">Token Code *</label>
-              <div className="relative">
-                <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  id="tokenCode"
-                  value={tokenCode}
-                  onChange={(e) => setTokenCode(e.target.value)}
-                  required
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                  placeholder="Enter your token code"
-                />
-              </div>
-              <p className="text-sm text-gray-500 mt-1">You received this code during or after attending the event</p>
-            </div>
+
             {/* Event Info */}
             <div className="bg-gray-50 rounded-xl p-4">
               <h3 className="font-semibold text-gray-900 mb-2">Event Details</h3>
               <div className="space-y-1 text-sm text-gray-600">
                 <p><span className="font-medium">Event:</span> {event.title}</p>
-                <p><span className="font-medium">Date:</span> {new Date(event.start_date || event.date).toLocaleDateString()}</p>
+                <p><span className="font-medium">Date:</span> {event.start_date || event.date ? new Date(event.start_date || event.date as string).toLocaleDateString() : '-'}</p>
                 <p><span className="font-medium">Location:</span> {event.location}</p>
                 <p><span className="font-medium">Organizer:</span> {event.organizer}</p>
               </div>
@@ -185,7 +184,7 @@ export default function MintPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={!walletAddress || !tokenCode || isMinting}
+              disabled={!walletAddress || isMinting}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-semibold transition-all transform hover:scale-105 disabled:transform-none"
             >
               {isMinting ? 'Minting...' : 'Mint Certificate'}
@@ -194,7 +193,7 @@ export default function MintPage() {
           {/* Help */}
           <div className="text-center mt-6 pt-6 border-t border-gray-200">
             <p className="text-sm text-gray-600">
-              Don't have a token code?{' '}
+              Can't mint ?{' '}
               <a href="#" className="text-blue-600 hover:text-blue-700 underline">Contact event organizer</a>
             </p>
           </div>

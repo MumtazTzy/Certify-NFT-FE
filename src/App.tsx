@@ -13,7 +13,7 @@ import Login from './feature/auth/pages/Login';
 import Events from './feature/user/events/pages/Events';
 import EventDetail from './feature/user/events/pages/EventDetail';
 import WhitelistRegistration from './feature/user/whitelist/pages/WhitelistRegistration';
-import MintPage from './feature/vendors/pages/MintPage';
+import MintPage from './feature/user/certificates/pages/MintPage';
 import MyCertificates from './feature/user/certificates/pages/MyCertificates';
 import VerifyCertificate from './feature/vendors/pages/VerifyCertificate';
 import VendorLogin from './feature/vendors/pages/VendorLogin';
