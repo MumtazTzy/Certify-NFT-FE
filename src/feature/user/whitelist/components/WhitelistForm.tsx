@@ -15,7 +15,7 @@ interface WhitelistFormProps {
 const WhitelistForm: React.FC<WhitelistFormProps> = ({ event, walletAddress, isSubmitting, onSubmit }) => (
     <div className="bg-white rounded-2xl shadow-xl p-8">
         <div className="relative h-32 rounded-xl overflow-hidden mb-6">
-            <img src={`https://api.gpadaka.com/${event.picture}`} alt={event.title} className="w-full h-full object-cover" />
+            <img src={`${event.picture}`} alt={event.title} className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
             <div className="absolute bottom-2 left-3 right-3"><h2 className="text-white font-bold text-lg">{event.title}</h2></div>
         </div>
