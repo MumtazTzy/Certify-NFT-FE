@@ -38,10 +38,10 @@ Runs 10 critical checks before deployment:
 2. ✅ **Sync Check** - Dev branch must be up to date
 3. ✅ **Changes Check** - No uncommitted changes
 4. ✅ **Files Check** - All critical files exist
-5. ✅ **Dockerfile Check** - Syntax validation
+5. ✅ **Docker file Check** - Syntax validation
 6. ✅ **Build Check** - Application builds successfully
-7. ✅ **Sitemap Check** - sitemap.xml in dist folder
-8. ✅ **Robots Check** - robots.txt in dist folder
+7. ✅ **Sitemap Check** - sitemap.xml in dist. folder
+8. ✅ **Robots Check** - robots.txt in dist. folder
 9. ✅ **Workflow Check** - GitHub Actions file exists
 10. ✅ **Compose Check** - docker-compose.yml syntax
 
