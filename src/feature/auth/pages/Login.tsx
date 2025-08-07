@@ -21,6 +21,13 @@ export default function Login() {
   const [hasRedirected, setHasRedirected] = useState(false);
 
   useEffect(() => {
+    // Redirect pengguna baru (role null) ke halaman register
+    if (isAuthenticated && user && user.role === null && !hasRedirected) {
+      navigate('/register');
+      setHasRedirected(true);
+      return;
+    }
+
     if (isAuthenticated && user?.role && !hasRedirected) {
       if (isRegistering) {
         navigate('/register/vendor');
@@ -55,13 +62,11 @@ export default function Login() {
 
       const data = await loginWithWallet(address);
 
-      // ✅ INI PERUBAHAN UTAMA
+      // ✅ Pengguna baru: set role null dan arahkan ke /register
       if (data.isNewUser) {
-        login(address, null); 
-        if (redirectPath) {
-          navigate(redirectPath);
-          setHasRedirected(true);
-        }
+        login(address, null);
+        navigate('/register');
+        setHasRedirected(true);
       } else {
         login(address, data.role);
         if (redirectPath) {
@@ -72,7 +77,7 @@ export default function Login() {
       }
 
     } catch (err: unknown) {
-      // ... (error handling)
+      setError(err instanceof Error ? err.message : 'Failed to connect wallet');
     } finally {
       setIsLoading(false);
     }
