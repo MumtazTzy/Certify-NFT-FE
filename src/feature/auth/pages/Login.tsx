@@ -73,7 +73,7 @@ export default function Login() {
           navigate(redirectPath);
           setHasRedirected(true);
         }
-        // Navigasi ke dashboard akan ditangani oleh useEffect
+        
       }
 
     } catch (err: unknown) {
