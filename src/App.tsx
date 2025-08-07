@@ -35,7 +35,8 @@ import UserDashboard from './feature/user/dashboard/UserDashboard';
 import UserProfile from './feature/user/UserProfile';
 import UploadCertificateForm from './feature/vendors/events/components/UploadCertificateForm';
 import Verify from './feature/user/events/pages/verify';
-import MintCertificateButton from './feature/user/certificates/components/MintCeritificateButton';
+// import MintCertificateButton from './feature/user/certificates/components/MintCeritificateButton';
+import { RequireAuth, RequireRole } from './feature/auth/components/RouteGuards';
 
 // 3. Definisikan semua rute Anda sebagai objek JavaScript di luar komponen App
 const router = createBrowserRouter([
@@ -55,9 +56,21 @@ const router = createBrowserRouter([
       { path: 'events', element: <Events /> },
       { path: 'myevents', element: <MyEvent /> },
       { path: 'events/:id', element: <EventDetail /> },
-      { path: 'whitelist/:eventId', element: <WhitelistRegistration /> },
-      { path: 'mint/:eventId', element: <MintPage /> },
-      { path: 'my-certificates', element: <MyCertificates /> },
+      { path: 'whitelist/:eventId', element: (
+        <RequireRole allowedRoles={['users']}>
+          <WhitelistRegistration />
+        </RequireRole>
+      ) },
+      { path: 'mint/:eventId', element: (
+        <RequireRole allowedRoles={['users']}>
+          <MintPage />
+        </RequireRole>
+      ) },
+      { path: 'my-certificates', element: (
+        <RequireRole allowedRoles={['users']}>
+          <MyCertificates />
+        </RequireRole>
+      ) },
       { path: 'verify/:tokenId', element: <VerifyCertificate /> },
       { path: 'about', element: <About /> },
       { path: 'faq', element: <FAQ /> },
@@ -67,18 +80,58 @@ const router = createBrowserRouter([
 
       // Vendor Routes
       { path: 'vendor/login', element: <VendorLogin /> },
-      { path: 'vendor/dashboard', element: <VendorDashboard /> },
-      { path: 'vendor/event/create', element: <CreateEvent /> },
-      { path: 'vendor/event/:id', element: <ManageEvent /> },
-      { path: 'vendor/event/:id/whitelist', element: <ViewWhitelist /> },
-      { path: 'vendor/event/:id/minted', element: <ViewMinted /> },
-      { path: 'vendor/profile', element: <VendorProfile /> },
-      { path: 'vendor/event/:id/upload-certificate', element: <UploadCertificateForm eventId={':id'} /> },
+      { path: 'vendor/dashboard', element: (
+        <RequireRole allowedRoles={['vendors']}>
+          <VendorDashboard />
+        </RequireRole>
+      ) },
+      { path: 'vendor/event/create', element: (
+        <RequireRole allowedRoles={['vendors']}>
+          <CreateEvent />
+        </RequireRole>
+      ) },
+      { path: 'vendor/event/:id', element: (
+        <RequireRole allowedRoles={['vendors']}>
+          <ManageEvent />
+        </RequireRole>
+      ) },
+      { path: 'vendor/event/:id/whitelist', element: (
+        <RequireRole allowedRoles={['vendors']}>
+          <ViewWhitelist />
+        </RequireRole>
+      ) },
+      { path: 'vendor/event/:id/minted', element: (
+        <RequireRole allowedRoles={['vendors']}>
+          <ViewMinted />
+        </RequireRole>
+      ) },
+      { path: 'vendor/profile', element: (
+        <RequireRole allowedRoles={['vendors']}>
+          <VendorProfile />
+        </RequireRole>
+      ) },
+      { path: 'vendor/event/:id/upload-certificate', element: (
+        <RequireRole allowedRoles={['vendors']}>
+          <UploadCertificateForm eventId={':id'} />
+        </RequireRole>
+      ) },
 
       // User Routes
-      { path: 'user/dashboard', element: <UserDashboard /> },
-      { path: 'profile', element: <UserProfile /> },
-      {path:'user/verify', element: <Verify/>},
+      { path: 'user/dashboard', element: (
+        <RequireRole allowedRoles={['users']}>
+          <UserDashboard />
+        </RequireRole>
+      ) },
+      { path: 'profile', element: (
+        <RequireAuth>
+          <UserProfile />
+        </RequireAuth>
+      ) },
+      { path:'user/verify', element: (
+        <RequireRole allowedRoles={['users']}>
+          <Verify/>
+        </RequireRole>
+      )},
      
 
       // Error Routes
