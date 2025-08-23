@@ -42,7 +42,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /home/gpadaka/certify-nft-fe
+            cd /home/gpadaka19/certify-nft-fe
             docker compose -f docker-compose.yml down
             docker compose -f docker-compose.yml build
             docker compose -f docker-compose.yml up -d
