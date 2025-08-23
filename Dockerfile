@@ -32,7 +32,7 @@ COPY --from=build /app/public/sitemap.xml ./dist/sitemap.xml
 COPY --from=build /app/public/robots.txt ./dist/robots.txt
 COPY --from=build /app/public/assets ./dist/assets
 
-EXPOSE 3004
+EXPOSE 3003
 
 # ⏯ Jalankan preview server dengan config TS
-CMD ["npx", "vite", "preview", "--config", "vite.config.ts", "--port", "3004", "--host"]
+CMD ["npx", "vite", "preview", "--config", "vite.config.ts", "--port", "3003", "--host"]
