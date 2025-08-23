@@ -1,13 +1,13 @@
-
 services:
   certify-nft-fe:
     container_name: certify-nft-fe
+    image: certify-nft-fe:latest
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3004:3004"
-    restart: unless-stopped
+      - "3003:3003"
+    restart: always
     networks:
       - certify-nft-network
 
