@@ -21,9 +21,9 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /home/gpadaka
+            cd /home/gpadaka19
             docker rm -f certify-nft-fe || true
-            docker rmi -f certify-nft:latest || true
+            docker rmi -f certify-nft-fe:latest || true
             rm -rf certify-nft-fe
 
       - name: Copy FE project files to VPS
@@ -33,7 +33,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "."
-          target: "/home/gpadaka/certify-nft-fe"
+          target: "/home/gpadaka19/certify-nft-fe"
 
       - name: Build & Compose FE on VPS
         uses: appleboy/ssh-action@v1.0.0
