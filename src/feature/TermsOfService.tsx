@@ -17,7 +17,7 @@ export default function TermsOfService() {
             <li><b>Third-Party Services:</b> The platform may integrate with third-party wallets or services. Certify-NFT is not responsible for their terms or privacy practices.</li>
             <li><b>Contact:</b> For questions, contact us at support@certify.com.</li>
           </ul>
-          <p className="text-gray-500 text-sm mt-6">Last updated: 2024</p>
+          <p className="text-gray-500 text-sm mt-6">Last updated: 2025</p>
         </div>
       </div>
     </div>

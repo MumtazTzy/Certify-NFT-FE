@@ -56,7 +56,7 @@ export default function Home() {
             </h1>
             
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Certify NFT platform issues, manages, and verifies digital certificates as NFTs. Secure, transparent, and fully owned by the recipients. The leading Certify NFT solution for blockchain certificates.
+              Certify NFT by <strong>WLNO</strong> issues, manages, and verifies digital certificates as NFTs. Secure, transparent, and fully owned by recipients. The leading solution for blockchain certificates.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -162,7 +162,7 @@ export default function Home() {
                     <Award className="h-8 w-8 text-white" />
                     <div>
                       <h3 className="font-bold">Certify NFT Certificate #1234</h3>
-                      <p className="text-sm text-white/80">Web3 Workshop 2024</p>
+                      <p className="text-sm text-white/80">Web3 Workshop 2025</p>
                     </div>
                   </div>
                   <div className="space-y-2 text-sm">
@@ -172,7 +172,7 @@ export default function Home() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-white/80">Date:</span>
-                      <span>March 15, 2024</span>
+                      <span>March 15, 2025</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-white/80">Status:</span>

@@ -17,7 +17,7 @@ export default function PrivacyPolicy() {
             <li><b>Policy Updates:</b> We may update this policy from time to time. Continued use of the platform means you accept the latest version.</li>
             <li><b>Contact:</b> For privacy questions, contact us at support@certify.com.</li>
           </ul>
-          <p className="text-gray-500 text-sm mt-6">Last updated: 2024</p>
+          <p className="text-gray-500 text-sm mt-6">Last updated: 2025</p>
         </div>
       </div>
     </div>
