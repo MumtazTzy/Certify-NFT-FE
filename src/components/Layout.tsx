@@ -70,7 +70,7 @@ export default function Layout() {
       </main>
 
       <footer className="bg-white border-t py-8 text-center text-gray-500">
-        © 2025 WLNO-Certify. All rights reserved.
+        © 2025 WLNO. All rights reserved.
       </footer>
       
       <Toaster position="top-center" />
